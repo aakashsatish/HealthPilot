@@ -1,6 +1,6 @@
 from redis import Redis
 from rq import Queue
-from .jobs import test_job, process_upload_job
+from .jobs import test_job, process_upload_job, process_lab_report_job
 
 # Redis connection
 redis_conn = Redis(host='localhost', port=6379, db=0)
@@ -16,4 +16,9 @@ def enqueue_test_job(name="World"):
 def enqueue_upload_job(file_path):
     """Enqueue a file processing job"""
     job = default_queue.enqueue(process_upload_job, file_path)
+    return {"job_id": job.id, "status": "queued"}
+
+def enqueue_lab_report_job(file_path: str):
+    """Enqueue a lab report processing job"""
+    job = default_queue.enqueue(process_lab_report_job, file_path)
     return {"job_id": job.id, "status": "queued"}

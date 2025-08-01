@@ -2,9 +2,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from datetime import datetime
-from app.queue import enqueue_test_job, enqueue_upload_job
+from .queue import enqueue_test_job, enqueue_upload_job, enqueue_lab_report_job
 from rq import Queue
 from redis import Redis
+
 
 
 # Configure logging
@@ -39,6 +40,12 @@ async def health_check():
 async def create_test_job(name: str = "World"):
     """Create a test background job"""
     result = enqueue_test_job(name)
+    return result
+
+@app.post("/upload/lab-report")
+async def upload_lab_report(file_path: str):
+    """Upload a lab report for processing"""
+    result = enqueue_lab_report_job(file_path)
     return result
 
 @app.get("/jobs/{job_id}")
