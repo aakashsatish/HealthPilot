@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from .ocr_service import OCRService
+from .upload_service import UploadService
 
 def test_job(name="World"):
     """Simple test job"""
@@ -18,6 +19,8 @@ def process_upload_job(file_path):
 
 def process_lab_report_job(file_path: str):
     """Process uploaded lab report with OCR"""
+    upload_service = UploadService()
+    
     try:
         # Initialize OCR service
         ocr_service = OCRService()
@@ -26,6 +29,8 @@ def process_lab_report_job(file_path: str):
         ocr_result = ocr_service.process_file(file_path)
         
         if not ocr_result["success"]:
+            # Cleanup file even if OCR failed
+            upload_service.cleanup_temp_file(file_path)
             return {
                 "status": "failed",
                 "error": ocr_result.get("error", "OCR processing failed"),
@@ -33,8 +38,9 @@ def process_lab_report_job(file_path: str):
                 "timestamp": datetime.now().isoformat()
             }
         
-        # For now, just return the extracted text
-        # Later we'll add analysis logic here
+        # Cleanup temporary file after successful processing
+        upload_service.cleanup_temp_file(file_path)
+        
         return {
             "status": "completed",
             "file_path": file_path,
@@ -45,6 +51,8 @@ def process_lab_report_job(file_path: str):
         }
         
     except Exception as e:
+        # Cleanup file on any error
+        upload_service.cleanup_temp_file(file_path)
         return {
             "status": "failed",
             "error": str(e),

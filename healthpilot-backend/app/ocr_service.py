@@ -96,13 +96,34 @@ class OCRService:
             }
     
     def process_file(self, file_path: str) -> Dict:
-        """Process any file (PDF or image) and extract text"""
+        """Process any file (PDF, image, or text) and extract text"""
         file_ext = os.path.splitext(file_path)[1].lower()
         
         if file_ext == '.pdf':
             return self.extract_text_from_pdf(file_path)
         elif file_ext in ['.png', '.jpg', '.jpeg', '.tiff', '.bmp']:
             return self.extract_text_from_image(file_path)
+        elif file_ext == '.txt':
+            # For text files, just read the content directly
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    text = f.read()
+                return {
+                    "text": text,
+                    "lines": text.split('\n'),
+                    "confidence_scores": [1.0] * len(text.split('\n')),  # Perfect confidence for text files
+                    "average_confidence": 1.0,
+                    "success": True
+                }
+            except Exception as e:
+                return {
+                    "text": "",
+                    "lines": [],
+                    "confidence_scores": [],
+                    "average_confidence": 0,
+                    "success": False,
+                    "error": str(e)
+                }
         else:
             return {
                 "text": "",
