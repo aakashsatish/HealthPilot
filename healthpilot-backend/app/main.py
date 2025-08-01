@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from .upload_service import UploadService
 from .queue import enqueue_lab_report_job
@@ -7,7 +10,11 @@ from datetime import datetime
 from .queue import enqueue_test_job, enqueue_upload_job, enqueue_lab_report_job
 from rq import Queue
 from redis import Redis
-
+from .database import DatabaseService
+from .auth import AuthService
+from .models import UploadRequest
+from fastapi import Depends, Form
+from typing import Optional
 
 
 # Configure logging
@@ -77,18 +84,59 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
+# Initialize services
+db_service = DatabaseService()
+auth_service = AuthService(db_service.supabase)
+
+@app.post("/auth/profile")
+async def create_profile(request: UploadRequest):
+    """Create or update user profile"""
+    # Generate a new UUID for the user
+    import uuid
+    user_id = str(uuid.uuid4())
+    
+    profile = db_service.create_user_profile(
+        user_id, 
+        request.email, 
+        request.age, 
+        request.sex
+    )
+    return {"profile": profile, "user_id": user_id}
+
+@app.get("/auth/profile/{user_id}")
+async def get_profile(user_id: str):
+    """Get user profile"""
+    profile = db_service.get_user_by_id(user_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return {"profile": profile}
+
+# Update the existing upload endpoint
 @app.post("/upload/file")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(
+    file: UploadFile = File(...),
+    user_id: str = Form(...),
+    age: Optional[int] = Form(None),
+    sex: Optional[str] = Form(None)
+):
     """Upload a lab report file for processing"""
     try:
         # Save the uploaded file
         upload_result = await upload_service.save_uploaded_file(file)
         
-        # Enqueue processing job
-        job_result = enqueue_lab_report_job(upload_result["file_path"])
+        # Save to database
+        report = db_service.save_lab_report(
+            user_id, 
+            upload_result["file_path"], 
+            upload_result["original_filename"]
+        )
+        
+        # Enqueue processing job with report ID
+        job_result = enqueue_lab_report_job(upload_result["file_path"], report["id"])
         
         return {
             "upload": upload_result,
+            "report": report,
             "job": job_result,
             "message": "File uploaded and processing started"
         }
