@@ -15,6 +15,7 @@ from .auth import AuthService
 from .models import UploadRequest
 from fastapi import Depends, Form
 from typing import Optional
+from .analysis_engine import AnalysisEngine
 
 
 # Configure logging
@@ -121,18 +122,29 @@ async def upload_file(
 ):
     """Upload a lab report file for processing"""
     try:
+        print(f"DEBUG: Starting upload for user {user_id}")
+        
         # Save the uploaded file
         upload_result = await upload_service.save_uploaded_file(file)
+        print(f"DEBUG: File saved: {upload_result}")
         
         # Save to database
+        print(f"DEBUG: About to save to database...")
         report = db_service.save_lab_report(
             user_id, 
             upload_result["file_path"], 
             upload_result["original_filename"]
         )
+        print(f"DEBUG: Report saved: {report}")
+        print(f"DEBUG: Report type: {type(report)}")
+        
+        if not report:
+            print(f"DEBUG: Report is None, raising error")
+            raise HTTPException(status_code=500, detail="Failed to save report to database")
         
         # Enqueue processing job with report ID
         job_result = enqueue_lab_report_job(upload_result["file_path"], report["id"])
+        print(f"DEBUG: Job queued: {job_result}")
         
         return {
             "upload": upload_result,
@@ -142,10 +154,14 @@ async def upload_file(
         }
         
     except HTTPException as e:
+        print(f"DEBUG: HTTPException: {e}")
         raise e
     except Exception as e:
+        print(f"DEBUG: Exception: {e}")
+        import traceback
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         logger.error(f"Upload failed: {e}")
-        raise HTTPException(status_code=500, detail="Upload failed")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 @app.get("/jobs/{job_id}/result")
 async def get_job_result(job_id: str):

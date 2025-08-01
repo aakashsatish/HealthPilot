@@ -13,12 +13,12 @@ def enqueue_test_job(name="World"):
     job = default_queue.enqueue(test_job, name)
     return {"job_id": job.id, "status": "queued"}
 
-def enqueue_upload_job(file_path):
+def enqueue_upload_job(file_path: str):
     """Enqueue a file processing job"""
     job = default_queue.enqueue(process_upload_job, file_path)
     return {"job_id": job.id, "status": "queued"}
 
-def enqueue_lab_report_job(file_path: str):
+def enqueue_lab_report_job(file_path: str, report_id: str):
     """Enqueue a lab report processing job"""
-    job = default_queue.enqueue(process_lab_report_job, file_path)
+    job = default_queue.enqueue(process_lab_report_job, file_path, report_id)
     return {"job_id": job.id, "status": "queued"}
