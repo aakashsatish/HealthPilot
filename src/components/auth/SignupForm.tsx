@@ -1,16 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from '@/lib/auth'
+import { signUp } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 
-export default function LoginForm() {
+export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [email, setEmail] = useState('example@gmail.com')
   const [password, setPassword] = useState('••••••••')
+  const [confirmPassword, setConfirmPassword] = useState('••••••••')
   const [isEmailFocused, setIsEmailFocused] = useState(false)
   const [isPasswordFocused, setIsPasswordFocused] = useState(false)
+  const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false)
+  
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,13 +21,26 @@ export default function LoginForm() {
     setIsLoading(true)
     setError('')
 
+    // Basic validation
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      setIsLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const { data, error } = await signIn(email, password)
+      const { data, error } = await signUp(email, password)
       
       if (error) {
         setError(error.message)
       } else {
-        // Redirect to dashboard on successful login
+        // Redirect to dashboard on successful signup
         router.push('/dashboard')
       }
     } catch (err) {
@@ -62,9 +78,24 @@ export default function LoginForm() {
     }
   }
 
-  // Determine text color based on whether it's the example text
+  const handleConfirmPasswordFocus = () => {
+    setIsConfirmPasswordFocused(true)
+    if (confirmPassword === '••••••••') {
+      setConfirmPassword('')
+    }
+  }
+
+  const handleConfirmPasswordBlur = () => {
+    setIsConfirmPasswordFocused(false)
+    if (confirmPassword === '') {
+      setConfirmPassword('••••••••')
+    }
+  }
+
+  // Determine text colors
   const emailTextColor = email === 'example@gmail.com' ? 'text-gray-400' : 'text-gray-900'
   const passwordTextColor = password === '••••••••' ? 'text-gray-400' : 'text-gray-900'
+  const confirmPasswordTextColor = confirmPassword === '••••••••' ? 'text-gray-400' : 'text-gray-900'
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -103,6 +134,23 @@ export default function LoginForm() {
           />
         </div>
 
+        <div>
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+            Confirm Password
+          </label>
+          <input
+            type="password"
+            id="confirmPassword"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            onFocus={handleConfirmPasswordFocus}
+            onBlur={handleConfirmPasswordBlur}
+            className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${confirmPasswordTextColor} placeholder-gray-500`}
+            placeholder="Confirm your password"
+            required
+          />
+        </div>
+
         {error && (
           <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
             {error}
@@ -114,9 +162,9 @@ export default function LoginForm() {
           disabled={isLoading}
           className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
         >
-          {isLoading ? 'Signing in...' : 'Sign In'}
+          {isLoading ? 'Creating account...' : 'Create Account'}
         </button>
       </form>
     </div>
   )
-}
+} 
