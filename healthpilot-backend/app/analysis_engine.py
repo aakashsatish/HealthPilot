@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 from .reference_ranges import ReferenceRanges
 from .comprehensive_lab_parser import ComprehensiveLabParser
-from .ai_recommendations import AIRecommendationService
+from .ai_analysis_service import AIAnalysisService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,10 +10,10 @@ class AnalysisEngine:
     def __init__(self):
         self.reference_ranges = ReferenceRanges()
         self.lab_parser = ComprehensiveLabParser()
-        self.ai_recommendations = AIRecommendationService()
+        self.ai_analysis = AIAnalysisService()
     
     def analyze_lab_report(self, ocr_text: str, age: Optional[int] = None, sex: Optional[str] = None) -> Dict[str, Any]:
-        """Analyze a complete lab report"""
+        """Analyze a complete lab report using AI"""
         try:
             # Parse lab results from OCR text
             lab_results = self.lab_parser.parse_lab_results(ocr_text)
@@ -25,47 +25,33 @@ class AnalysisEngine:
                     "results": []
                 }
             
-            # Analyze each result
-            analyzed_results = []
-            critical_findings = []
-            abnormal_findings = []
-            
-            for result in lab_results:
-                analysis = self._analyze_single_result(result, age, sex)
-                analyzed_results.append(analysis)
+            # Use AI for full analysis
+            try:
+                ai_analysis = self.ai_analysis.generate_full_analysis(lab_results, age, sex)
                 
-                # Track critical and abnormal findings
-                if analysis["classification"] in ["CRITICAL_LOW", "CRITICAL_HIGH"]:
-                    critical_findings.append(analysis)
-                elif analysis["classification"] in ["LOW", "HIGH"]:
-                    abnormal_findings.append(analysis)
-            
-            # Generate summary
-            summary = self._generate_summary(analyzed_results, critical_findings, abnormal_findings)
-            
-            # Generate recommendations
-            recommendations = self._generate_recommendations(analyzed_results, age, sex)
-            
-            # Generate risk assessment
-            risk_assessment = self._generate_risk_assessment(analyzed_results, age, sex)
-            
-            # Generate early warning signals
-            early_warnings = self._generate_early_warnings(analyzed_results)
-            
-            return {
-                "success": True,
-                "results": analyzed_results,
-                "summary": summary,
-                "recommendations": recommendations,
-                "risk_assessment": risk_assessment,
-                "early_warnings": early_warnings,
-                "critical_findings": critical_findings,
-                "abnormal_findings": abnormal_findings,
-                "total_tests": len(analyzed_results),
-                "normal_count": len([r for r in analyzed_results if r["classification"] == "NORMAL"]),
-                "abnormal_count": len(abnormal_findings),
-                "critical_count": len(critical_findings)
-            }
+                return {
+                    "success": True,
+                    "results": lab_results,
+                    "summary": ai_analysis["summary"],
+                    "recommendations": ai_analysis["recommendations"],
+                    "risk_assessment": {
+                        "risk_level": ai_analysis["risk_level"],
+                        "risk_factors": ai_analysis["risk_factors"],
+                        "recommendations": ai_analysis["recommendations"]
+                    },
+                    "early_warnings": ai_analysis["early_warnings"],
+                    "critical_findings": [],
+                    "abnormal_findings": [r for r in lab_results if r["classification"] != "NORMAL"],
+                    "total_tests": len(lab_results),
+                    "normal_count": len([r for r in lab_results if r["classification"] == "NORMAL"]),
+                    "abnormal_count": len([r for r in lab_results if r["classification"] != "NORMAL"]),
+                    "critical_count": 0
+                }
+                
+            except Exception as e:
+                logger.error(f"AI analysis failed: {e}")
+                # Fallback to rule-based analysis
+                return self._get_fallback_analysis(lab_results, age, sex)
             
         except Exception as e:
             logger.error(f"Error analyzing lab report: {e}")
@@ -74,6 +60,50 @@ class AnalysisEngine:
                 "error": str(e),
                 "results": []
             }
+    
+    def _get_fallback_analysis(self, lab_results: List[Dict], age: Optional[int], sex: Optional[str]) -> Dict[str, Any]:
+        """Fallback to rule-based analysis if AI fails"""
+        # Analyze each result
+        analyzed_results = []
+        critical_findings = []
+        abnormal_findings = []
+        
+        for result in lab_results:
+            analysis = self._analyze_single_result(result, age, sex)
+            analyzed_results.append(analysis)
+            
+            # Track critical and abnormal findings
+            if analysis["classification"] in ["CRITICAL_LOW", "CRITICAL_HIGH"]:
+                critical_findings.append(analysis)
+            elif analysis["classification"] in ["LOW", "HIGH"]:
+                abnormal_findings.append(analysis)
+        
+        # Generate summary
+        summary = self._generate_summary(analyzed_results, critical_findings, abnormal_findings)
+        
+        # Generate recommendations
+        recommendations = self._generate_recommendations(analyzed_results, age, sex)
+        
+        # Generate risk assessment
+        risk_assessment = self._generate_risk_assessment(analyzed_results, age, sex)
+        
+        # Generate early warning signals
+        early_warnings = self._generate_early_warnings(analyzed_results)
+        
+        return {
+            "success": True,
+            "results": analyzed_results,
+            "summary": summary,
+            "recommendations": recommendations,
+            "risk_assessment": risk_assessment,
+            "early_warnings": early_warnings,
+            "critical_findings": critical_findings,
+            "abnormal_findings": abnormal_findings,
+            "total_tests": len(analyzed_results),
+            "normal_count": len([r for r in analyzed_results if r["classification"] == "NORMAL"]),
+            "abnormal_count": len(abnormal_findings),
+            "critical_count": len(critical_findings)
+        }
     
     def _analyze_single_result(self, result: Dict[str, Any], age: Optional[int], sex: Optional[str]) -> Dict[str, Any]:
         """Analyze a single lab result"""
@@ -181,23 +211,13 @@ class AnalysisEngine:
             return "✅ Great news! All your lab results are within the normal range."
     
     def _generate_recommendations(self, results: List[Dict], age: Optional[int], sex: Optional[str]) -> List[str]:
-        """Generate AI-powered recommendations"""
-        try:
-            # Use AI to generate recommendations
-            ai_recommendations = self.ai_recommendations.generate_recommendations(results, age, sex)
-            return ai_recommendations
-        except Exception as e:
-            logger.error(f"AI recommendation failed: {e}")
-            # Fallback to rule-based recommendations
-            return self._get_fallback_recommendations(results, age, sex)
-        
-    def _get_fallback_recommendations(self, results: List[Dict], age: Optional[int], sex: Optional[str]) -> List[str]:
-        """Fallback to rule-based recommendations if AI fails"""
+        """Generate comprehensive personalized recommendations"""
         recommendations = []
         
         # Group results by category
         lipid_results = [r for r in results if r["test_name"] in ["total_cholesterol", "hdl", "ldl", "triglycerides", "non_hdl_cholesterol"]]
         metabolic_results = [r for r in results if r["test_name"] in ["urate", "glucose", "hba1c"]]
+        cbc_results = [r for r in results if r["test_name"] in ["hemoglobin", "white_blood_cells", "platelets"]]
         
         # Lipid profile recommendations
         if lipid_results:
