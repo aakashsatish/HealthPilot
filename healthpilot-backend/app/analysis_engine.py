@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional
 from .reference_ranges import ReferenceRanges
 from .comprehensive_lab_parser import ComprehensiveLabParser
+from .ai_recommendations import AIRecommendationService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -9,6 +10,7 @@ class AnalysisEngine:
     def __init__(self):
         self.reference_ranges = ReferenceRanges()
         self.lab_parser = ComprehensiveLabParser()
+        self.ai_recommendations = AIRecommendationService()
     
     def analyze_lab_report(self, ocr_text: str, age: Optional[int] = None, sex: Optional[str] = None) -> Dict[str, Any]:
         """Analyze a complete lab report"""
@@ -179,13 +181,23 @@ class AnalysisEngine:
             return "✅ Great news! All your lab results are within the normal range."
     
     def _generate_recommendations(self, results: List[Dict], age: Optional[int], sex: Optional[str]) -> List[str]:
-        """Generate comprehensive personalized recommendations"""
+        """Generate AI-powered recommendations"""
+        try:
+            # Use AI to generate recommendations
+            ai_recommendations = self.ai_recommendations.generate_recommendations(results, age, sex)
+            return ai_recommendations
+        except Exception as e:
+            logger.error(f"AI recommendation failed: {e}")
+            # Fallback to rule-based recommendations
+            return self._get_fallback_recommendations(results, age, sex)
+        
+    def _get_fallback_recommendations(self, results: List[Dict], age: Optional[int], sex: Optional[str]) -> List[str]:
+        """Fallback to rule-based recommendations if AI fails"""
         recommendations = []
         
         # Group results by category
         lipid_results = [r for r in results if r["test_name"] in ["total_cholesterol", "hdl", "ldl", "triglycerides", "non_hdl_cholesterol"]]
         metabolic_results = [r for r in results if r["test_name"] in ["urate", "glucose", "hba1c"]]
-        cbc_results = [r for r in results if r["test_name"] in ["hemoglobin", "white_blood_cells", "platelets"]]
         
         # Lipid profile recommendations
         if lipid_results:
@@ -210,7 +222,6 @@ class AnalysisEngine:
         hdl_result = next((r for r in lipid_results if r["test_name"] == "hdl"), None)
         ldl_result = next((r for r in lipid_results if r["test_name"] == "ldl"), None)
         triglycerides_result = next((r for r in lipid_results if r["test_name"] == "triglycerides"), None)
-        total_cholesterol_result = next((r for r in lipid_results if r["test_name"] == "total_cholesterol"), None)
         
         # HDL recommendations
         if hdl_result and hdl_result["classification"] == "LOW":
