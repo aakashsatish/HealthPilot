@@ -18,10 +18,9 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
     if (acceptedFiles.length === 0) return
 
     const file = acceptedFiles[0]
+    console.log('DEBUG: File selected:', file.name, file.type, file.size)
     setIsUploading(true)
     setUploadProgress(0)
-
-    
 
     try {
       const formData = new FormData()
@@ -30,25 +29,32 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
       formData.append('age', '30')
       formData.append('sex', 'male')
 
+      console.log('DEBUG: User ID being sent:', user?.id || 'anonymous')
+      console.log('DEBUG: Sending request to backend...')
       const response = await fetch('http://localhost:8000/upload/file', {
         method: 'POST',
         body: formData,
       })
 
+      console.log('DEBUG: Response status:', response.status)
+      
       if (response.ok) {
         const result = await response.json()
+        console.log('DEBUG: Upload successful:', result)
         setUploadProgress(100)
         onUploadSuccess(result)
       } else {
-        throw new Error('Upload failed')
+        const errorText = await response.text()
+        console.error('DEBUG: Upload failed:', response.status, errorText)
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`)
       }
     } catch (error) {
-      console.error('Upload error:', error)
+      console.error('DEBUG: Upload error:', error)
       alert('Upload failed. Please try again.')
     } finally {
       setIsUploading(false)
     }
-  }, [onUploadSuccess])
+  }, [onUploadSuccess, user])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

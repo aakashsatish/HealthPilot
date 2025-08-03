@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from dotenv import load_dotenv
-from .ocr_service import OCRService
+from .tesseract_ocr_service import TesseractOCRService
 from .upload_service import UploadService
 from .analysis_engine import AnalysisEngine
 from .database import DatabaseService  # Add this import
@@ -32,15 +32,25 @@ def process_lab_report_job(file_path: str, report_id: str):
     db_service = DatabaseService()
     
     try:
+        # Check if file exists at start
+        import os
+        logger.info(f"Job started for file: {file_path}")
+        logger.info(f"File exists at start: {os.path.exists(file_path)}")
+        
         # Initialize services
-        ocr_service = OCRService()
+        ocr_service = TesseractOCRService()
         analysis_engine = AnalysisEngine()
+        
+        # Check file exists before OCR
+        logger.info(f"File exists before OCR: {os.path.exists(file_path)}")
         
         # Extract text from file
         ocr_result = ocr_service.process_file(file_path)
+        logger.info(f"OCR completed. Success: {ocr_result['success']}, Text length: {len(ocr_result.get('text', ''))}")
         
         if not ocr_result["success"]:
-            # Cleanup file even if OCR failed
+            # Cleanup file only after OCR fails
+            logger.info(f"OCR failed, cleaning up file: {file_path}")
             upload_service.cleanup_temp_file(file_path)
             return {
                 "status": "failed",
@@ -51,12 +61,16 @@ def process_lab_report_job(file_path: str, report_id: str):
         
         # Analyze the lab results
         analysis_result = analysis_engine.analyze_lab_report(ocr_result["text"])
+        logger.info(f"Analysis completed. Success: {analysis_result.get('success', False)}")
         
         # Save analysis result to database
         analysis = db_service.save_analysis_result(report_id, ocr_result, analysis_result)
+        logger.info(f"Analysis saved to database: {analysis is not None}")
         
-        # Cleanup temporary file after successful processing
+        # Cleanup temporary file ONLY after successful processing
+        logger.info(f"Job completed successfully, cleaning up file: {file_path}")
         upload_service.cleanup_temp_file(file_path)
+        logger.info(f"File cleanup completed")
         
         return {
             "status": "completed",
@@ -71,7 +85,8 @@ def process_lab_report_job(file_path: str, report_id: str):
         }
         
     except Exception as e:
-        # Cleanup file on any error
+        # Cleanup file only on error
+        logger.error(f"Job failed with exception: {str(e)}")
         upload_service.cleanup_temp_file(file_path)
         logger.error(f"Job failed: {str(e)}")
         return {

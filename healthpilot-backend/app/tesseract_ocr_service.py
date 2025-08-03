@@ -1,44 +1,42 @@
 import os
 import tempfile
 from typing import List, Dict, Optional
-from paddleocr import PaddleOCR
+import pytesseract
 from pdf2image import convert_from_path
 from PIL import Image
 import logging
 
 logger = logging.getLogger(__name__)
 
-class OCRService:
+class TesseractOCRService:
     def __init__(self):
-        """Initialize PaddleOCR with English language"""
+        """Initialize Tesseract OCR service"""
         try:
-            self.ocr = PaddleOCR(use_angle_cls=True, lang='en')
-            logger.info("PaddleOCR initialized successfully")
+            # Test if tesseract is available
+            pytesseract.get_tesseract_version()
+            logger.info("Tesseract OCR initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to initialize PaddleOCR: {e}")
+            logger.error(f"Failed to initialize Tesseract OCR: {e}")
             raise
     
     def extract_text_from_image(self, image_path: str) -> Dict:
-        """Extract text from an image file"""
+        """Extract text from an image file using Tesseract"""
         try:
-            result = self.ocr.ocr(image_path)
+            # Open the image
+            image = Image.open(image_path)
             
-            # Extract text from OCR result
-            extracted_text = []
-            confidence_scores = []
+            # Extract text using Tesseract
+            text = pytesseract.image_to_string(image)
             
-            for line in result:
-                for word_info in line:
-                    text = word_info[1][0]  # The text
-                    confidence = word_info[1][1]  # Confidence score
-                    extracted_text.append(text)
-                    confidence_scores.append(confidence)
+            # For Tesseract, we don't have confidence scores, so we'll use a default
+            lines = text.split('\n')
+            confidence_scores = [0.8] * len(lines)  # Default confidence
             
             return {
-                "text": " ".join(extracted_text),
-                "lines": extracted_text,
+                "text": text,
+                "lines": lines,
                 "confidence_scores": confidence_scores,
-                "average_confidence": sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0,
+                "average_confidence": 0.8,
                 "success": True
             }
             
@@ -54,16 +52,16 @@ class OCRService:
             }
     
     def extract_text_from_pdf(self, pdf_path: str) -> Dict:
-        """Extract text from PDF by converting to images first with memory optimization"""
+        """Extract text from PDF by converting to images first"""
         try:
             logger.info(f"Starting PDF processing for: {pdf_path}")
             logger.info(f"PDF file exists: {os.path.exists(pdf_path)}")
             
-            # Convert PDF to images with lower DPI to reduce memory usage
+            # Convert PDF to images
             logger.info("Converting PDF to images...")
             images = convert_from_path(
                 pdf_path,
-                dpi=150,  # Lower DPI to reduce memory usage (default is 200)
+                dpi=150,  # Lower DPI to reduce memory usage
                 fmt='PNG',
                 thread_count=1  # Single thread to reduce memory usage
             )
@@ -159,4 +157,4 @@ class OCRService:
                 "text": "",
                 "success": False,
                 "error": f"Unsupported file type: {file_ext}"
-            }
+            } 
