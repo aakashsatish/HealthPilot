@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { UploadResult } from '@/types/upload'
+import { useUser } from '@/contexts/UserContext'
 
 interface FileUploadProps {
   onUploadSuccess: (result: UploadResult) => void
@@ -11,6 +12,7 @@ interface FileUploadProps {
 export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const { user } = useUser()
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return
@@ -19,10 +21,12 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
     setIsUploading(true)
     setUploadProgress(0)
 
+    
+
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('user_id', 'test-user-123') // We'll get this from auth later
+      formData.append('user_id', user?.id || 'anonymous')
       formData.append('age', '30')
       formData.append('sex', 'male')
 

@@ -13,26 +13,27 @@ export default function LoginForm() {
   const [isPasswordFocused, setIsPasswordFocused] = useState(false)
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
+  
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setIsLoading(true)
+  setError('')
 
-    try {
-      const { data, error } = await signIn(email, password)
-      
-      if (error) {
-        setError(error.message)
-      } else {
-        // Redirect to dashboard on successful login
-        router.push('/dashboard')
-      }
-    } catch (err) {
-      setError('An unexpected error occurred')
-    } finally {
-      setIsLoading(false)
+  try {
+    const { data, error } = await signIn(email, password)
+    
+    if (error) {
+      setError(error.message)
+    } else {
+      // Redirect to dashboard on successful login
+      router.push('/dashboard')
     }
+  } catch (err) {
+    setError('An unexpected error occurred')
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const handleEmailFocus = () => {
     setIsEmailFocused(true)

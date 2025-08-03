@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-
+import { signUp } from '@/lib/auth'
 export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -15,52 +15,61 @@ export default function SignupForm() {
   
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setIsLoading(true)
+  setError('')
 
-    // Basic validation
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      setIsLoading(false)
-      return
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      // Call your backend API to create user
-      const response = await fetch('http://localhost:8000/auth/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: email, // Using email as user_id for now
-          email: email,
-          age: null,
-          sex: null
-        }),
-      })
-
-      if (response.ok) {
-        // Redirect to dashboard
-        router.push('/dashboard')
-      } else {
-        const data = await response.json()
-        setError(data.detail || 'Signup failed')
-      }
-    } catch (err) {
-      setError('An unexpected error occurred')
-    } finally {
-      setIsLoading(false)
-    }
+  // Basic validation
+  if (password !== confirmPassword) {
+    setError('Passwords do not match')
+    setIsLoading(false)
+    return
   }
+
+  if (password.length < 6) {
+    setError('Password must be at least 6 characters')
+    setIsLoading(false)
+    return
+  }
+
+  try {
+    // Step 1: Create Supabase Auth user
+    const { data: authData, error: authError } = await signUp(email, password)
+    
+    if (authError) {
+      setError(authError.message)
+      setIsLoading(false)
+      return
+    }
+
+    // Step 2: Create profile in backend
+    const response = await fetch('http://localhost:8000/auth/profile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: authData.user?.id || email,
+        email: email,
+        age: null,
+        sex: null
+      }),
+    })
+
+    if (response.ok) {
+      // Redirect to dashboard on successful signup
+      router.push('/dashboard')
+    } else {
+      const data = await response.json()
+      setError(data.detail || 'Profile creation failed')
+    }
+  } catch (err) {
+    setError('An unexpected error occurred')
+  } finally {
+    setIsLoading(false)
+  }
+}
 
   const handleEmailFocus = () => {
     setIsEmailFocused(true)
