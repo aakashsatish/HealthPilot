@@ -36,6 +36,7 @@ class DatabaseService:
             
             data = {
                 "id": profile_id,
+                "supabase_user_id": user_id,  # Link to Supabase Auth user
                 "email": email,
                 "age": age,
                 "sex": sex
@@ -58,29 +59,33 @@ class DatabaseService:
     def save_lab_report(self, user_id: str, file_path: str, original_filename: str):
         """Save lab report metadata"""
         try:
-            # First, try to get an existing profile by email
+            # First, try to get an existing profile by Supabase Auth user ID
             profile = None
             
-            # Try to find profile by email first
+            # Try to find profile by Supabase Auth user ID
             try:
-                email = f"{user_id}@example.com"
-                response = self.supabase.table("profiles").select("*").eq("email", email).execute()
+                response = self.supabase.table("profiles").select("*").eq("supabase_user_id", user_id).execute()
                 if response.data:
                     profile = response.data[0]
                     logger.info(f"Found existing profile: {profile['id']}")
+                else:
+                    logger.info(f"No profile found for Supabase user ID: {user_id}")
             except Exception as e:
-                logger.info(f"Error finding profile by email: {e}")
+                logger.info(f"Error finding profile by Supabase user ID: {e}")
             
-            # If no profile found, create a new one with a unique email
+            # If no profile found, create a new one
             if not profile:
                 try:
-                    import uuid
-                    unique_id = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID
-                    email = f"{user_id}-{unique_id}@example.com"
+                    # Get user email from Supabase Auth
+                    auth_response = self.supabase.auth.admin.get_user(user_id)
+                    email = auth_response.user.email if auth_response.user else f"{user_id}@example.com"
+                    
                     profile = self.create_user_profile(user_id, email)
                     logger.info(f"Created new profile: {profile['id'] if profile else None}")
                 except Exception as e:
                     logger.error(f"Error creating profile: {e}")
+                    # Fallback: create profile with basic info
+                    profile = self.create_user_profile(user_id, f"{user_id}@example.com")
             
             if not profile:
                 logger.error("Failed to create or find profile")

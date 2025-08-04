@@ -16,12 +16,14 @@ from .models import UploadRequest
 from fastapi import Depends, Form
 from typing import Optional
 from .analysis_engine import AnalysisEngine
+from .history_service import HistoryService
 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 upload_service = UploadService()
+history_service = HistoryService()
 
 app = FastAPI(
     title="HealthPilot API",
@@ -185,3 +187,55 @@ async def get_job_result(job_id: str):
         result["error"] = str(job.exc_info)
     
     return result
+
+@app.get("/reports/history/{user_id}")
+async def get_user_history(user_id: str):
+    """Get user's report history"""
+    try:
+        # First, get the profile for this Supabase Auth user ID
+        db_service = DatabaseService()
+        profile = None
+        
+        try:
+            response = db_service.supabase.table("profiles").select("*").eq("supabase_user_id", user_id).execute()
+            if response.data:
+                profile = response.data[0]
+        except Exception as e:
+            logger.error(f"Error finding profile for user {user_id}: {e}")
+        
+        if not profile:
+            return {"success": True, "history": []}
+        
+        history = history_service.get_user_report_history(profile["id"])
+        return {"success": True, "history": history}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/reports/{report_id}")
+async def get_report_details(report_id: str):
+    """Get detailed information for a specific report"""
+    try:
+        details = history_service.get_report_details(report_id)
+        if not details:
+            raise HTTPException(status_code=404, detail="Report not found")
+        return {"success": True, "report": details}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/reports/compare")
+async def compare_reports(report_id_1: str, report_id_2: str):
+    """Compare two reports"""
+    try:
+        comparison = history_service.compare_reports(report_id_1, report_id_2)
+        return {"success": True, "comparison": comparison}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/tests/trends/{profile_id}/{test_name}")
+async def get_test_trends(profile_id: str, test_name: str, limit: int = 10):
+    """Get trend data for a specific test"""
+    try:
+        trends = history_service.get_test_trends(profile_id, test_name, limit)
+        return {"success": True, "trends": trends}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
