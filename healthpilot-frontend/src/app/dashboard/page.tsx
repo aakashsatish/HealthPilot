@@ -2,6 +2,7 @@
 
 import { useUser } from '@/contexts/UserContext'
 import AuthGuard from '@/components/auth/AuthGuard'
+import EmailModal from '@/components/ui/EmailModal'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
@@ -21,6 +22,8 @@ export default function Dashboard() {
     recentReports: []
   })
   const [loading, setLoading] = useState(true)
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
+  const [selectedReportId, setSelectedReportId] = useState<string>('')
 
   useEffect(() => {
     if (user?.id) {
@@ -71,19 +74,14 @@ export default function Dashboard() {
     }
   }
 
-  const handleEmailReport = async (reportId: string) => {
-    const email = prompt('Enter your email address to receive the report:')
-    if (!email) return
+  const handleEmailReport = (reportId: string) => {
+    setSelectedReportId(reportId)
+    setIsEmailModalOpen(true)
+  }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      alert('Please enter a valid email address.')
-      return
-    }
-
+  const handleSendEmail = async (email: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/reports/${reportId}/email`, {
+      const response = await fetch(`http://localhost:8000/reports/${selectedReportId}/email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,14 +90,14 @@ export default function Dashboard() {
       })
 
       if (response.ok) {
-        alert('Report sent to your email successfully!')
+        return { success: true, message: 'Report sent to your email successfully!' }
       } else {
         const errorData = await response.json()
-        alert(`Failed to send email: ${errorData.detail || 'Unknown error'}`)
+        return { success: false, message: `Failed to send email: ${errorData.detail || 'Unknown error'}` }
       }
     } catch (error) {
       console.error('Error sending email:', error)
-      alert('Error sending email. Please try again.')
+      return { success: false, message: 'Error sending email. Please try again.' }
     }
   }
 
@@ -307,6 +305,12 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      
+      <EmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        onSend={handleSendEmail}
+      />
     </AuthGuard>
   )
 }

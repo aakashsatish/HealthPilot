@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import AuthGuard from '@/components/auth/AuthGuard'
+import EmailModal from '@/components/ui/EmailModal'
 import { ReportDetails } from '@/types/upload'
 
 export default function ReportDetailPage() {
@@ -10,6 +11,7 @@ export default function ReportDetailPage() {
   const reportId = params.id as string
   const [report, setReport] = useState<ReportDetails | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
 
   useEffect(() => {
     fetchReportDetails()
@@ -54,17 +56,11 @@ export default function ReportDetailPage() {
     }
   }
 
-  const handleEmailReport = async () => {
-    const email = prompt('Enter your email address to receive the report:')
-    if (!email) return
+  const handleEmailReport = () => {
+    setIsEmailModalOpen(true)
+  }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      alert('Please enter a valid email address.')
-      return
-    }
-
+  const handleSendEmail = async (email: string) => {
     try {
       const response = await fetch(`http://localhost:8000/reports/${reportId}/email`, {
         method: 'POST',
@@ -75,14 +71,14 @@ export default function ReportDetailPage() {
       })
 
       if (response.ok) {
-        alert('Report sent to your email successfully!')
+        return { success: true, message: 'Report sent to your email successfully!' }
       } else {
         const errorData = await response.json()
-        alert(`Failed to send email: ${errorData.detail || 'Unknown error'}`)
+        return { success: false, message: `Failed to send email: ${errorData.detail || 'Unknown error'}` }
       }
     } catch (error) {
       console.error('Error sending email:', error)
-      alert('Error sending email. Please try again.')
+      return { success: false, message: 'Error sending email. Please try again.' }
     }
   }
 
@@ -239,6 +235,12 @@ export default function ReportDetailPage() {
           </div>
         </div>
       </div>
+      
+      <EmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        onSend={handleSendEmail}
+      />
     </AuthGuard>
   )
 }
