@@ -83,18 +83,8 @@ export default function PrivacyPage() {
                 </ul>
               </section>
 
-              <section>
-                <h2 className="text-2xl font-bold text-white mb-4">Contact Us</h2>
-                <p className="text-gray-300 leading-relaxed">
-                  If you have questions about this Privacy Policy, please contact us at{' '}
-                  <a href="mailto:privacy@healthpilot.com" className="text-blue-400 hover:text-blue-300">
-                    privacy@healthpilot.com
-                  </a>
-                </p>
-              </section>
-
               <div className="text-sm text-gray-400 mt-8 pt-6 border-t border-gray-700">
-                <p>Last updated: December 2024</p>
+                <p>Last updated: August 2025</p>
               </div>
             </div>
           </div>
