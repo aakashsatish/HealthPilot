@@ -71,6 +71,38 @@ export default function Dashboard() {
     }
   }
 
+  const handleEmailReport = async (reportId: string) => {
+    const email = prompt('Enter your email address to receive the report:')
+    if (!email) return
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      alert('Please enter a valid email address.')
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/reports/${reportId}/email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      if (response.ok) {
+        alert('Report sent to your email successfully!')
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to send email: ${errorData.detail || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error sending email:', error)
+      alert('Error sending email. Please try again.')
+    }
+  }
+
   const handleLogout = async () => {
     await signOut()
   }
@@ -241,6 +273,12 @@ export default function Dashboard() {
                             >
                               View Details →
                             </Link>
+                            <button
+                              onClick={() => handleEmailReport(reportData.id)}
+                              className="text-green-400 hover:text-green-300 text-sm font-medium"
+                            >
+                              📧 Email
+                            </button>
                             <button
                               onClick={() => handleDeleteReport(reportData.id)}
                               className="text-red-400 hover:text-red-300 text-sm font-medium"

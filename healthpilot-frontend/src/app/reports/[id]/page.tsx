@@ -54,6 +54,38 @@ export default function ReportDetailPage() {
     }
   }
 
+  const handleEmailReport = async () => {
+    const email = prompt('Enter your email address to receive the report:')
+    if (!email) return
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      alert('Please enter a valid email address.')
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/reports/${reportId}/email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      if (response.ok) {
+        alert('Report sent to your email successfully!')
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to send email: ${errorData.detail || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error sending email:', error)
+      alert('Error sending email. Please try again.')
+    }
+  }
+
   if (loading) {
     return (
       <AuthGuard>
@@ -97,12 +129,20 @@ export default function ReportDetailPage() {
               <a href="/history" className="text-blue-400 hover:text-blue-300 inline-block font-medium">
                 ← Back to History
               </a>
-              <button
-                onClick={handleDeleteReport}
-                className="text-red-400 hover:text-red-300 font-medium px-4 py-2 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-colors"
-              >
-                Delete Report
-              </button>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleEmailReport}
+                  className="text-green-400 hover:text-green-300 font-medium px-4 py-2 rounded-lg border border-green-500/30 hover:bg-green-500/10 transition-colors"
+                >
+                  📧 Email Report
+                </button>
+                <button
+                  onClick={handleDeleteReport}
+                  className="text-red-400 hover:text-red-300 font-medium px-4 py-2 rounded-lg border border-red-500/30 hover:bg-red-500/10 transition-colors"
+                >
+                  Delete Report
+                </button>
+              </div>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">
               {report.original_filename}

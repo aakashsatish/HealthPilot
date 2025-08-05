@@ -17,6 +17,7 @@ from fastapi import Depends, Form
 from typing import Optional
 from .analysis_engine import AnalysisEngine
 from .history_service import HistoryService
+from .email_service import EmailService
 
 
 # Configure logging
@@ -90,6 +91,7 @@ if __name__ == "__main__":
 # Initialize services
 db_service = DatabaseService()
 auth_service = AuthService(db_service.supabase)
+email_service = EmailService()
 
 @app.post("/auth/profile")
 async def create_profile(request: UploadRequest):
@@ -314,6 +316,44 @@ async def delete_report(report_id: str):
             raise HTTPException(status_code=404, detail="Report not found")
     except Exception as e:
         logger.error(f"Error deleting report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/reports/{report_id}/email")
+async def email_report(report_id: str, request: dict):
+    """Send a report analysis via email"""
+    try:
+        # Get report details
+        report = history_service.get_report_details(report_id)
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        # Get user profile for name
+        user_name = "User"
+        if report.get("profile_id"):
+            try:
+                profile_response = db_service.supabase.table("profiles").select("email").eq("id", report["profile_id"]).execute()
+                if profile_response.data:
+                    user_name = profile_response.data[0].get("email", "User")
+            except Exception as e:
+                logger.error(f"Error getting user profile: {e}")
+        
+        # Get email from request body
+        email = request.get("email")
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        # Send email
+        success = email_service.send_report_email(email, report, user_name)
+        
+        if success:
+            return {"success": True, "message": f"Report sent to {email}"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send email")
+            
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error sending report email: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/reports/compare")

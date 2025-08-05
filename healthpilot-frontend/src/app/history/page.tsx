@@ -73,6 +73,38 @@ export default function HistoryPage() {
     }
   }
 
+  const handleEmailReport = async (reportId: string) => {
+    const email = prompt('Enter your email address to receive the report:')
+    if (!email) return
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      alert('Please enter a valid email address.')
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/reports/${reportId}/email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      if (response.ok) {
+        alert('Report sent to your email successfully!')
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to send email: ${errorData.detail || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error sending email:', error)
+      alert('Error sending email. Please try again.')
+    }
+  }
+
   if (loading) {
     return (
       <AuthGuard>
@@ -194,6 +226,12 @@ export default function HistoryPage() {
                             className="px-3 py-1 text-sm text-blue-400 hover:text-blue-300 font-medium"
                           >
                             View Details
+                          </button>
+                          <button
+                            onClick={() => handleEmailReport(report.id)}
+                            className="px-3 py-1 text-sm text-green-400 hover:text-green-300 font-medium"
+                          >
+                            📧 Email
                           </button>
                           <button
                             onClick={() => window.open(`/reports/${report.id}`, '_blank')}
