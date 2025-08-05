@@ -101,6 +101,41 @@ export default function Dashboard() {
     }
   }
 
+  const handleDownloadReport = async (reportId: string) => {
+    try {
+      const response = await fetch(`http://localhost:8000/reports/${reportId}/download`)
+      
+      if (response.ok) {
+        const result = await response.json()
+        
+        // Create a blob from the JSON data
+        const blob = new Blob([result.data], { type: 'application/json' })
+        
+        // Create a download link
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = result.filename
+        
+        // Trigger download
+        document.body.appendChild(link)
+        link.click()
+        
+        // Cleanup
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+        
+        alert('Report downloaded successfully!')
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to download report: ${errorData.detail || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error downloading report:', error)
+      alert('Error downloading report. Please try again.')
+    }
+  }
+
   const handleLogout = async () => {
     await signOut()
   }
@@ -276,6 +311,12 @@ export default function Dashboard() {
                               className="text-green-400 hover:text-green-300 text-sm font-medium"
                             >
                               📧 Email
+                            </button>
+                            <button
+                              onClick={() => handleDownloadReport(reportData.id)}
+                              className="text-purple-400 hover:text-purple-300 text-sm font-medium"
+                            >
+                              📥 Download
                             </button>
                             <button
                               onClick={() => handleDeleteReport(reportData.id)}

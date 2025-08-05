@@ -82,6 +82,41 @@ export default function ReportDetailPage() {
     }
   }
 
+  const handleDownloadReport = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/reports/${reportId}/download`)
+      
+      if (response.ok) {
+        const result = await response.json()
+        
+        // Create a blob from the JSON data
+        const blob = new Blob([result.data], { type: 'application/json' })
+        
+        // Create a download link
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = result.filename
+        
+        // Trigger download
+        document.body.appendChild(link)
+        link.click()
+        
+        // Cleanup
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+        
+        alert('Report downloaded successfully!')
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to download report: ${errorData.detail || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error downloading report:', error)
+      alert('Error downloading report. Please try again.')
+    }
+  }
+
   if (loading) {
     return (
       <AuthGuard>
@@ -131,6 +166,12 @@ export default function ReportDetailPage() {
                   className="text-green-400 hover:text-green-300 font-medium px-4 py-2 rounded-lg border border-green-500/30 hover:bg-green-500/10 transition-colors"
                 >
                   📧 Email Report
+                </button>
+                <button
+                  onClick={handleDownloadReport}
+                  className="text-purple-400 hover:text-purple-300 font-medium px-4 py-2 rounded-lg border border-purple-500/30 hover:bg-purple-500/10 transition-colors"
+                >
+                  📥 Download Report
                 </button>
                 <button
                   onClick={handleDeleteReport}

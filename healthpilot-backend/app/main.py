@@ -356,6 +356,49 @@ async def email_report(report_id: str, request: dict):
         logger.error(f"Error sending report email: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/reports/{report_id}/download")
+async def download_report(report_id: str):
+    """Download a report as a JSON file"""
+    try:
+        # Get report details
+        report = history_service.get_report_details(report_id)
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        # Create a comprehensive report object
+        download_data = {
+            "report_id": report_id,
+            "filename": report.get("original_filename", "lab_report"),
+            "upload_date": report.get("created_at"),
+            "risk_level": report.get("risk_level"),
+            "summary": report.get("summary"),
+            "abnormal_count": report.get("abnormal_count", 0),
+            "critical_count": report.get("critical_count", 0),
+            "lab_name": report.get("lab_name"),
+            "analysis_result": report.get("analysis_result", {}),
+            "download_timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Convert to JSON string
+        import json
+        json_data = json.dumps(download_data, indent=2, default=str)
+        
+        # Create filename
+        filename = f"{report.get('original_filename', 'lab_report')}_{report_id}.json"
+        
+        return {
+            "success": True,
+            "filename": filename,
+            "data": json_data,
+            "content_type": "application/json"
+        }
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error downloading report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/reports/compare")
 async def compare_reports(report_id_1: str, report_id_2: str):
     """Compare two reports"""
