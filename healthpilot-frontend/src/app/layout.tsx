@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { UserProvider } from '@/contexts/UserContext'
+import Footer from '@/components/ui/Footer'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -21,9 +22,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans`}>
+      <body className={`${inter.variable} font-sans flex flex-col min-h-screen`}>
         <UserProvider>
-          {children}
+          <div className="flex-1">
+            {children}
+          </div>
+          <Footer />
         </UserProvider>
       </body>
     </html>

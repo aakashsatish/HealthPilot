@@ -97,7 +97,7 @@ export default function HistoryPage() {
               <p className="text-gray-600 dark:text-gray-300 mb-8 text-lg leading-relaxed">Upload your first lab report to get started</p>
               <a
                 href="/upload"
-                className="btn-primary inline-flex items-center space-x-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-8 py-4 rounded-2xl font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                className="btn-primary inline-flex items-center space-x-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-8 py-4 rounded-2xl font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-300"
               >
                 Upload Report
               </a>
