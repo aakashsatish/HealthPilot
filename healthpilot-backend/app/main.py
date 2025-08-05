@@ -94,25 +94,101 @@ auth_service = AuthService(db_service.supabase)
 @app.post("/auth/profile")
 async def create_profile(request: UploadRequest):
     """Create or update user profile"""
-    # Generate a new UUID for the user
-    import uuid
-    user_id = str(uuid.uuid4())
-    
-    profile = db_service.create_user_profile(
-        user_id, 
-        request.email, 
-        request.age, 
-        request.sex
-    )
-    return {"profile": profile, "user_id": user_id}
+    try:
+        # Check if profile already exists
+        existing_profile = None
+        try:
+            response = db_service.supabase.table("profiles").select("*").eq("supabase_user_id", request.user_id).execute()
+            if response.data:
+                existing_profile = response.data[0]
+        except Exception as e:
+            logger.info(f"Error finding existing profile: {e}")
+        
+        if existing_profile:
+            # Update existing profile
+            update_data = {
+                "email": request.email,
+                "age": request.age,
+                "sex": request.sex,
+                "weight": request.weight,
+                "height": request.height,
+                "weight_unit": request.weight_unit,
+                "height_unit": request.height_unit,
+                "medical_conditions": request.medical_conditions,
+                "medications": request.medications,
+                "lifestyle_factors": request.lifestyle_factors
+            }
+            
+            response = db_service.supabase.table("profiles").update(update_data).eq("id", existing_profile["id"]).execute()
+            
+            if response.data:
+                return {
+                    "success": True,
+                    "profile": response.data[0],
+                    "message": "Profile updated successfully"
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "Failed to update profile"
+                }
+        else:
+            # Create new profile
+            profile = db_service.create_user_profile(
+                user_id=request.user_id,
+                email=request.email,
+                age=request.age,
+                sex=request.sex,
+                weight=request.weight,
+                height=request.height,
+                weight_unit=request.weight_unit,
+                height_unit=request.height_unit,
+                medical_conditions=request.medical_conditions,
+                medications=request.medications,
+                lifestyle_factors=request.lifestyle_factors
+            )
+            
+            if profile:
+                return {
+                    "success": True,
+                    "profile": profile,
+                    "message": "Profile created successfully"
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "Failed to create profile"
+                }
+    except Exception as e:
+        logger.error(f"Error creating/updating profile: {e}")
+        return {
+            "success": False,
+            "message": f"Error creating/updating profile: {str(e)}"
+        }
 
 @app.get("/auth/profile/{user_id}")
 async def get_profile(user_id: str):
     """Get user profile"""
-    profile = db_service.get_user_by_id(user_id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return {"profile": profile}
+    try:
+        # Try to find profile by Supabase Auth user ID
+        response = db_service.supabase.table("profiles").select("*").eq("supabase_user_id", user_id).execute()
+        
+        if response.data:
+            return {
+                "success": True,
+                "profile": response.data[0]
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Profile not found"
+            }
+    except Exception as e:
+        logger.error(f"Error getting profile: {e}")
+        return {
+            "success": False,
+            "message": f"Error getting profile: {str(e)}"
+        }
 
 # Update the existing upload endpoint
 @app.post("/upload/file")

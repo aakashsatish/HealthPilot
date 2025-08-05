@@ -26,6 +26,8 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('user_id', user?.id || 'anonymous')
+      console.log('DEBUG: Full user object:', user)
+      console.log('DEBUG: User ID being sent:', user?.id || 'anonymous')
       formData.append('age', '30')
       formData.append('sex', 'male')
 

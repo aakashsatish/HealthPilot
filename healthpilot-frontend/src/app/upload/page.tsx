@@ -29,21 +29,25 @@ export default function UploadPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
+      <div className="min-h-screen gradient-bg relative overflow-hidden">
+        {/* Organic background shapes */}
+        <div className="organic-shape"></div>
+        <div className="organic-shape"></div>
+        
+        <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          {/* Header with personality */}
+          <div className="hero-text flex justify-between items-center mb-12">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
                 Upload Lab Report
               </h1>
-              <p className="text-lg text-gray-600">
+              <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
                 Upload your blood test results to get personalized health insights
               </p>
             </div>
             <Link
               href="/dashboard"
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              className="btn-secondary bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 transform hover:scale-105"
             >
               Back to Dashboard
             </Link>

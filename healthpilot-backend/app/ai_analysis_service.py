@@ -9,11 +9,16 @@ class AIAnalysisService:
     def __init__(self, ollama_url: str = "http://localhost:11434"):
         self.ollama_url = ollama_url
     
-    def generate_full_analysis(self, lab_results: List[Dict], age: int = None, sex: str = None) -> Dict[str, Any]:
+    def generate_full_analysis(self, lab_results: List[Dict], age: int = None, sex: str = None, 
+                            weight: float = None, height: float = None, 
+                            weight_unit: str = None, height_unit: str = None,
+                            medical_conditions: List[str] = None, medications: List[str] = None,
+                            lifestyle_factors: List[str] = None) -> Dict[str, Any]:
         """Generate complete AI-powered analysis"""
         try:
             # Create comprehensive prompt for full analysis
-            prompt = self._create_full_analysis_prompt(lab_results, age, sex)
+            prompt = self._create_full_analysis_prompt(lab_results, age, sex, weight, height, 
+                                                     weight_unit, height_unit, medical_conditions, medications, lifestyle_factors)
             
             # Call Ollama API
             response = requests.post(
@@ -42,7 +47,11 @@ class AIAnalysisService:
             logger.error(f"AI analysis error: {e}")
             return self._get_fallback_analysis(lab_results)
     
-    def _create_full_analysis_prompt(self, lab_results: List[Dict], age: int = None, sex: str = None) -> str:
+    def _create_full_analysis_prompt(self, lab_results: List[Dict], age: int = None, sex: str = None,
+                                   weight: float = None, height: float = None,
+                                   weight_unit: str = None, height_unit: str = None,
+                                   medical_conditions: List[str] = None, medications: List[str] = None,
+                                   lifestyle_factors: List[str] = None) -> str:
         """Create a comprehensive prompt for full analysis"""
         
         # Format lab results for the prompt
@@ -54,12 +63,41 @@ class AIAnalysisService:
                 abnormal_count += 1
             results_text += f"- {result['original_name']}: {result['value']} {result['unit']} ({status})\n"
         
+        # Build personalization info
+        personalization = []
+        if age:
+            personalization.append(f"Age: {age}")
+        if sex:
+            personalization.append(f"Sex: {sex}")
+        if weight:
+            unit = weight_unit or 'kg'
+            personalization.append(f"Weight: {weight} {unit}")
+        if height:
+            unit = height_unit or 'cm'
+            if unit == 'ft':
+                # Convert decimal feet to feet and inches
+                feet = int(height)
+                inches = round((height - feet) * 12)
+                personalization.append(f"Height: {feet} ft {inches} in")
+            else:
+                personalization.append(f"Height: {height} {unit}")
+        if medical_conditions:
+            personalization.append(f"Medical Conditions: {', '.join(medical_conditions)}")
+        if medications:
+            personalization.append(f"Medications: {', '.join(medications)}")
+        if lifestyle_factors:
+            personalization.append(f"Lifestyle: {', '.join(lifestyle_factors)}")
+        
+        personalization_text = "\n".join(personalization) if personalization else "No additional information provided"
+        
         prompt = f"""You are a medical AI assistant. Analyze these lab results and provide a comprehensive health assessment in JSON format.
 
 Lab Results:
 {results_text}
 
-Patient Info: {age} year old {sex if sex else 'person'}
+Patient Information:
+{personalization_text}
+
 Abnormal Results: {abnormal_count} out of {len(lab_results)} tests
 
 Provide a JSON response with the following structure:
@@ -88,6 +126,9 @@ Focus on:
 - Lifestyle recommendations
 - Medical follow-up needs
 - Age and sex considerations
+- Weight and height considerations
+- Medical conditions and medications
+- Lifestyle factors
 
 Provide only valid JSON, no additional text."""
 

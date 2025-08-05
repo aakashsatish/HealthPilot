@@ -7,6 +7,13 @@ class UserProfile(BaseModel):
     email: str
     age: Optional[int] = None
     sex: Optional[str] = None
+    weight: Optional[float] = None  # in kg
+    height: Optional[float] = None  # in cm
+    weight_unit: Optional[str] = None  # kg or lbs
+    height_unit: Optional[str] = None  # cm or ft
+    medical_conditions: Optional[list[str]] = None
+    medications: Optional[list[str]] = None
+    lifestyle_factors: Optional[list[str]] = None
     created_at: Optional[datetime] = None
 
 class LabReport(BaseModel):
@@ -31,3 +38,10 @@ class UploadRequest(BaseModel):
     email: str
     age: Optional[int] = None
     sex: Optional[str] = None
+    weight: Optional[float] = None
+    height: Optional[float] = None
+    weight_unit: Optional[str] = None
+    height_unit: Optional[str] = None
+    medical_conditions: Optional[list[str]] = None
+    medications: Optional[list[str]] = None
+    lifestyle_factors: Optional[list[str]] = None

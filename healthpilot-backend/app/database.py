@@ -27,7 +27,11 @@ class DatabaseService:
             logger.error(f"Error getting user {user_id}: {e}")
             return None
     
-    def create_user_profile(self, user_id: str, email: str, age: Optional[int] = None, sex: Optional[str] = None):
+    def create_user_profile(self, user_id: str, email: str, age: Optional[int] = None, sex: Optional[str] = None, 
+                          weight: Optional[float] = None, height: Optional[float] = None,
+                          weight_unit: Optional[str] = None, height_unit: Optional[str] = None,
+                          medical_conditions: Optional[list] = None, medications: Optional[list] = None,
+                          lifestyle_factors: Optional[list] = None):
         """Create user profile"""
         try:
             # Generate a proper UUID for the profile
@@ -39,7 +43,14 @@ class DatabaseService:
                 "supabase_user_id": user_id,  # Link to Supabase Auth user
                 "email": email,
                 "age": age,
-                "sex": sex
+                "sex": sex,
+                "weight": weight,
+                "height": height,
+                "weight_unit": weight_unit,
+                "height_unit": height_unit,
+                "medical_conditions": medical_conditions,
+                "medications": medications,
+                "lifestyle_factors": lifestyle_factors
             }
             
             logger.info(f"Creating profile with data: {data}")

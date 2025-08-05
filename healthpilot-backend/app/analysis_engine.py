@@ -12,7 +12,11 @@ class AnalysisEngine:
         self.lab_parser = ComprehensiveLabParser()
         self.ai_analysis = AIAnalysisService()
     
-    def analyze_lab_report(self, ocr_text: str, age: Optional[int] = None, sex: Optional[str] = None) -> Dict[str, Any]:
+    def analyze_lab_report(self, ocr_text: str, age: Optional[int] = None, sex: Optional[str] = None,
+                         weight: Optional[float] = None, height: Optional[float] = None,
+                         weight_unit: Optional[str] = None, height_unit: Optional[str] = None,
+                         medical_conditions: Optional[List[str]] = None, medications: Optional[List[str]] = None,
+                         lifestyle_factors: Optional[List[str]] = None) -> Dict[str, Any]:
         """Analyze a complete lab report using AI"""
         try:
             # Parse lab results from OCR text
@@ -27,7 +31,8 @@ class AnalysisEngine:
             
             # Use AI for full analysis
             try:
-                ai_analysis = self.ai_analysis.generate_full_analysis(lab_results, age, sex)
+                ai_analysis = self.ai_analysis.generate_full_analysis(lab_results, age, sex, weight, height,
+                                                                   weight_unit, height_unit, medical_conditions, medications, lifestyle_factors)
                 
                 return {
                     "success": True,

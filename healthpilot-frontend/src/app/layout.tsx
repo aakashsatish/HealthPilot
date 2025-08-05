@@ -3,7 +3,11 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { UserProvider } from '@/contexts/UserContext'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'HealthPilot - Lab Report Analysis',
@@ -17,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.variable} font-sans`}>
         <UserProvider>
           {children}
         </UserProvider>
