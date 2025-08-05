@@ -106,16 +106,24 @@ export default function Dashboard() {
       const response = await fetch(`http://localhost:8000/reports/${reportId}/download`)
       
       if (response.ok) {
-        const result = await response.json()
+        // Get the filename from the response headers
+        const contentDisposition = response.headers.get('content-disposition')
+        let filename = `lab_report_${new Date().toISOString().split('T')[0]}.pdf`
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+          if (filenameMatch) {
+            filename = filenameMatch[1]
+          }
+        }
         
-        // Create a blob from the JSON data
-        const blob = new Blob([result.data], { type: 'application/json' })
+        // Create a blob from the PDF data
+        const blob = await response.blob()
         
         // Create a download link
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = result.filename
+        link.download = filename
         
         // Trigger download
         document.body.appendChild(link)
@@ -124,15 +132,12 @@ export default function Dashboard() {
         // Cleanup
         document.body.removeChild(link)
         window.URL.revokeObjectURL(url)
-        
-        alert('Report downloaded successfully!')
       } else {
         const errorData = await response.json()
-        alert(`Failed to download report: ${errorData.detail || 'Unknown error'}`)
+        console.error(`Failed to download report: ${errorData.detail || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error downloading report:', error)
-      alert('Error downloading report. Please try again.')
     }
   }
 
@@ -299,29 +304,42 @@ export default function Dashboard() {
                               Uploaded on {new Date(reportData.created_at).toLocaleDateString()}
                             </p>
                           </div>
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-2">
                             <Link
                               href={`/reports/${reportData.id}`}
-                              className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 hover:border-blue-500/30 transition-all duration-200"
                             >
-                              View Details →
+                              <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              View
                             </Link>
                             <button
                               onClick={() => handleEmailReport(reportData.id)}
-                              className="text-green-400 hover:text-green-300 text-sm font-medium"
+                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 hover:border-green-500/30 transition-all duration-200"
                             >
-                              📧 Email
+                              <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              Email
                             </button>
                             <button
                               onClick={() => handleDownloadReport(reportData.id)}
-                              className="text-purple-400 hover:text-purple-300 text-sm font-medium"
+                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 hover:border-purple-500/30 transition-all duration-200"
                             >
-                              📥 Download
+                              <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Download
                             </button>
                             <button
                               onClick={() => handleDeleteReport(reportData.id)}
-                              className="text-red-400 hover:text-red-300 text-sm font-medium"
+                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/30 transition-all duration-200"
                             >
+                              <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
                               Delete
                             </button>
                           </div>

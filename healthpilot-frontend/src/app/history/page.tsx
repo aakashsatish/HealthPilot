@@ -108,16 +108,24 @@ export default function HistoryPage() {
       const response = await fetch(`http://localhost:8000/reports/${reportId}/download`)
       
       if (response.ok) {
-        const result = await response.json()
+        // Get the filename from the response headers
+        const contentDisposition = response.headers.get('content-disposition')
+        let filename = `lab_report_${new Date().toISOString().split('T')[0]}.pdf`
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+          if (filenameMatch) {
+            filename = filenameMatch[1]
+          }
+        }
         
-        // Create a blob from the JSON data
-        const blob = new Blob([result.data], { type: 'application/json' })
+        // Create a blob from the PDF data
+        const blob = await response.blob()
         
         // Create a download link
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = result.filename
+        link.download = filename
         
         // Trigger download
         document.body.appendChild(link)
@@ -126,15 +134,12 @@ export default function HistoryPage() {
         // Cleanup
         document.body.removeChild(link)
         window.URL.revokeObjectURL(url)
-        
-        alert('Report downloaded successfully!')
       } else {
         const errorData = await response.json()
-        alert(`Failed to download report: ${errorData.detail || 'Unknown error'}`)
+        console.error(`Failed to download report: ${errorData.detail || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error downloading report:', error)
-      alert('Error downloading report. Please try again.')
     }
   }
 

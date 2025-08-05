@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form
+from fastapi.responses import FileResponse
 from .upload_service import UploadService
 from .queue import enqueue_lab_report_job
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +19,14 @@ from typing import Optional
 from .analysis_engine import AnalysisEngine
 from .history_service import HistoryService
 from .email_service import EmailService
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from io import BytesIO
+import tempfile
+import os
 
 
 # Configure logging
@@ -35,7 +44,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # Frontend URLs
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -358,40 +367,180 @@ async def email_report(report_id: str, request: dict):
 
 @app.get("/reports/{report_id}/download")
 async def download_report(report_id: str):
-    """Download a report as a JSON file"""
+    """Download a report as a PDF file"""
     try:
         # Get report details
         report = history_service.get_report_details(report_id)
+        logger.info(f"Download request for report {report_id}, report data: {report}")
+        
         if not report:
             raise HTTPException(status_code=404, detail="Report not found")
         
-        # Create a comprehensive report object
-        download_data = {
-            "report_id": report_id,
-            "filename": report.get("original_filename", "lab_report"),
-            "upload_date": report.get("created_at"),
-            "risk_level": report.get("risk_level"),
-            "summary": report.get("summary"),
-            "abnormal_count": report.get("abnormal_count", 0),
-            "critical_count": report.get("critical_count", 0),
-            "lab_name": report.get("lab_name"),
-            "analysis_result": report.get("analysis_result", {}),
-            "download_timestamp": datetime.utcnow().isoformat()
-        }
+        # Check if report has required data
+        if not isinstance(report, dict):
+            logger.error(f"Report data is not a dictionary: {type(report)}")
+            raise HTTPException(status_code=500, detail="Invalid report data format")
         
-        # Convert to JSON string
-        import json
-        json_data = json.dumps(download_data, indent=2, default=str)
+        # Create PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        story = []
+        styles = getSampleStyleSheet()
         
-        # Create filename
-        filename = f"{report.get('original_filename', 'lab_report')}_{report_id}.json"
+        # Title
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            alignment=1  # Center alignment
+        )
+        title = Paragraph("HealthPilot Lab Report Analysis", title_style)
+        story.append(title)
+        story.append(Spacer(1, 20))
         
-        return {
-            "success": True,
-            "filename": filename,
-            "data": json_data,
-            "content_type": "application/json"
-        }
+        # Report Information
+        info_style = ParagraphStyle(
+            'Info',
+            parent=styles['Normal'],
+            fontSize=12,
+            spaceAfter=6
+        )
+        
+        story.append(Paragraph(f"<b>Report ID:</b> {report_id}", info_style))
+        story.append(Paragraph(f"<b>Original File:</b> {report.get('original_filename', 'Unknown')}", info_style))
+        story.append(Paragraph(f"<b>Upload Date:</b> {report.get('created_at', 'Unknown')}", info_style))
+        if report.get('lab_name'):
+            story.append(Paragraph(f"<b>Laboratory:</b> {report.get('lab_name')}", info_style))
+        story.append(Spacer(1, 20))
+        
+        # Risk Level
+        risk_level = report.get('risk_level', 'UNKNOWN')
+        risk_color = {
+            'HIGH': colors.red,
+            'MODERATE': colors.orange,
+            'LOW': colors.green,
+            'UNKNOWN': colors.grey
+        }.get(risk_level, colors.grey)
+        
+        risk_style = ParagraphStyle(
+            'Risk',
+            parent=styles['Normal'],
+            fontSize=14,
+            spaceAfter=20,
+            textColor=risk_color
+        )
+        story.append(Paragraph(f"<b>Risk Level:</b> {risk_level}", risk_style))
+        
+        # Summary Statistics
+        story.append(Paragraph("<b>Summary Statistics:</b>", info_style))
+        story.append(Paragraph(f"• Abnormal Results: {report.get('abnormal_count', 0)}", info_style))
+        story.append(Paragraph(f"• Critical Results: {report.get('critical_count', 0)}", info_style))
+        story.append(Spacer(1, 20))
+        
+        # Analysis Summary
+        if report.get('summary'):
+            story.append(Paragraph("<b>Analysis Summary:</b>", info_style))
+            summary_style = ParagraphStyle(
+                'Summary',
+                parent=styles['Normal'],
+                fontSize=11,
+                spaceAfter=20,
+                leftIndent=20
+            )
+            story.append(Paragraph(report.get('summary'), summary_style))
+        else:
+            story.append(Paragraph("<b>Analysis Summary:</b>", info_style))
+            story.append(Paragraph("Report is still being processed. Analysis will be available soon.", info_style))
+        
+        # Lab Results Table
+        analysis_result = report.get('analysis_result')
+        if analysis_result and isinstance(analysis_result, dict) and analysis_result.get('results'):
+            story.append(Paragraph("<b>Lab Results:</b>", info_style))
+            story.append(Spacer(1, 10))
+            
+            # Create table data
+            table_data = [['Test', 'Value', 'Reference Range', 'Status']]
+            for result in analysis_result.get('results', []):
+                status_color = {
+                    'NORMAL': colors.green,
+                    'HIGH': colors.orange,
+                    'LOW': colors.orange,
+                    'CRITICAL': colors.red
+                }.get(result.get('classification', 'UNKNOWN'), colors.grey)
+                
+                table_data.append([
+                    result.get('original_name', 'Unknown'),
+                    f"{result.get('value', 'N/A')} {result.get('unit', '')}",
+                    result.get('reference_range', 'N/A'),
+                    result.get('classification', 'UNKNOWN')
+                ])
+            
+            # Create table
+            table = Table(table_data, colWidths=[2*inch, 1.5*inch, 2*inch, 1*inch])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]))
+            story.append(table)
+        else:
+            story.append(Paragraph("<b>Lab Results:</b>", info_style))
+            story.append(Paragraph("Lab results are being processed and will be available soon.", info_style))
+        
+        # Footer
+        story.append(Spacer(1, 30))
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.grey,
+            alignment=1
+        )
+        story.append(Paragraph(f"Generated by HealthPilot on {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}", footer_style))
+        
+        # Build PDF
+        doc.build(story)
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+            tmp_file.write(pdf_data)
+            tmp_file_path = tmp_file.name
+        
+        # Create filename with date
+        upload_date = report.get('created_at')
+        if upload_date:
+            try:
+                # Parse the date string and format it
+                if isinstance(upload_date, str):
+                    date_obj = datetime.fromisoformat(upload_date.replace('Z', '+00:00'))
+                else:
+                    date_obj = upload_date
+                date_str = date_obj.strftime('%Y-%m-%d')
+            except:
+                date_str = datetime.now().strftime('%Y-%m-%d')
+        else:
+            date_str = datetime.now().strftime('%Y-%m-%d')
+        
+        filename = f"lab_report_{date_str}.pdf"
+        
+        # Return file response
+        return FileResponse(
+            path=tmp_file_path,
+            filename=filename,
+            media_type='application/pdf'
+        )
         
     except HTTPException as e:
         raise e
