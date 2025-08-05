@@ -3,9 +3,73 @@
 import { useUser } from '@/contexts/UserContext'
 import AuthGuard from '@/components/auth/AuthGuard'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
+
+interface DashboardStats {
+  totalReports: number
+  healthScore: string
+  lastUpdated: string
+  recentReports: unknown[]
+}
 
 export default function Dashboard() {
   const { user, signOut } = useUser()
+  const [stats, setStats] = useState<DashboardStats>({
+    totalReports: 0,
+    healthScore: '--',
+    lastUpdated: '--',
+    recentReports: []
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchDashboardStats()
+    }
+  }, [user])
+
+  const fetchDashboardStats = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/reports/history/${user?.id}`)
+      const data = await response.json()
+      
+      if (data.success && data.history) {
+        setStats({
+          totalReports: data.history.length,
+          healthScore: data.history.length > 0 ? 'Good' : '--',
+          lastUpdated: data.history.length > 0 ? 'Recently' : '--',
+          recentReports: data.history.slice(0, 3) // Get last 3 reports
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteReport = async (reportId: string) => {
+    if (!confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/reports/${reportId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // Refresh the dashboard stats
+        await fetchDashboardStats()
+      } else {
+        console.error('Failed to delete report')
+        alert('Failed to delete report. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error deleting report:', error)
+      alert('Error deleting report. Please try again.')
+    }
+  }
 
   const handleLogout = async () => {
     await signOut()
@@ -74,7 +138,9 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm font-medium">Total Reports</p>
-                  <p className="text-3xl font-bold text-foreground">0</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {loading ? '...' : stats.totalReports}
+                  </p>
                 </div>
                 <div className="icon-container">
                   <svg className="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +154,9 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm font-medium">Health Score</p>
-                  <p className="text-3xl font-bold text-foreground">--</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {loading ? '...' : stats.healthScore}
+                  </p>
                 </div>
                 <div className="icon-container">
                   <svg className="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,7 +170,9 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm font-medium">Last Updated</p>
-                  <p className="text-3xl font-bold text-foreground">--</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {loading ? '...' : stats.lastUpdated}
+                  </p>
                 </div>
                 <div className="icon-container">
                   <svg className="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,26 +192,80 @@ export default function Dashboard() {
               </Link>
             </div>
             
-            <div className="text-center py-16">
-              <div className="icon-container mx-auto mb-8">
-                <svg className="w-12 h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+            {loading ? (
+              <div className="text-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading your reports...</p>
               </div>
-              <h3 className="text-2xl font-bold text-foreground mb-4">No reports yet</h3>
-              <p className="text-muted-foreground mb-8 max-w-lg mx-auto text-lg leading-relaxed">
-                Upload your first lab report to get started with personalized health insights and AI-powered analysis.
-              </p>
-              <Link
-                href="/upload"
-                className="btn-primary inline-flex items-center space-x-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-10 py-5 rounded-2xl font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-300"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <span>Upload Your First Report</span>
-              </Link>
-            </div>
+            ) : stats.totalReports === 0 ? (
+              <div className="text-center py-16">
+                <div className="icon-container mx-auto mb-8">
+                  <svg className="w-12 h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4">No reports yet</h3>
+                <p className="text-muted-foreground mb-8 max-w-lg mx-auto text-lg leading-relaxed">
+                  Upload your first lab report to get started with personalized health insights and AI-powered analysis.
+                </p>
+                <Link
+                  href="/upload"
+                  className="btn-primary inline-flex items-center space-x-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-10 py-5 rounded-2xl font-bold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-300"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <span>Upload Your First Report</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid gap-4">
+                  {stats.recentReports.map((report: unknown, index: number) => {
+                    const reportData = report as { id: string; original_filename?: string; created_at: string }
+                    return (
+                      <div key={index} className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-lg font-semibold text-white">
+                              {reportData.original_filename || 'Lab Report'}
+                            </h4>
+                            <p className="text-gray-300 text-sm">
+                              Uploaded on {new Date(reportData.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <Link
+                              href={`/reports/${reportData.id}`}
+                              className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                            >
+                              View Details →
+                            </Link>
+                            <button
+                              onClick={() => handleDeleteReport(reportData.id)}
+                              className="text-red-400 hover:text-red-300 text-sm font-medium"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="text-center">
+                  <Link
+                    href="/upload"
+                    className="btn-primary inline-flex items-center space-x-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-300"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span>Upload Another Report</span>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -36,18 +36,41 @@ export default function HistoryPage() {
   const getRiskLevelColor = (riskLevel: string) => {
     switch (riskLevel?.toUpperCase()) {
       case 'HIGH':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-500/20 text-red-400 border border-red-500/30'
       case 'MODERATE':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
       case 'LOW':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-500/20 text-green-400 border border-green-500/30'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
     }
   }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
+  }
+
+  const handleDeleteReport = async (reportId: string) => {
+    if (!confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/reports/${reportId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // Refresh the history after successful deletion
+        await fetchHistory()
+      } else {
+        console.error('Failed to delete report')
+        alert('Failed to delete report. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error deleting report:', error)
+      alert('Error deleting report. Please try again.')
+    }
   }
 
   if (loading) {
@@ -107,48 +130,48 @@ export default function HistoryPage() {
               {/* Statistics Summary with personality */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="feature-card gradient-card rounded-3xl p-8 transform rotate-1">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">{history.length}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 font-medium">Total Reports</div>
+                  <div className="text-3xl font-bold text-blue-400 mb-2">{history.length}</div>
+                  <div className="text-sm text-gray-300 font-medium">Total Reports</div>
                 </div>
                 <div className="feature-card gradient-card rounded-3xl p-8 transform -rotate-1">
-                  <div className="text-3xl font-bold text-green-600 mb-2">
+                  <div className="text-3xl font-bold text-green-400 mb-2">
                     {history.filter(r => r.risk_level === 'LOW').length}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 font-medium">Low Risk</div>
+                  <div className="text-sm text-gray-300 font-medium">Low Risk</div>
                 </div>
                 <div className="feature-card gradient-card rounded-3xl p-8 transform rotate-2">
-                  <div className="text-3xl font-bold text-yellow-600 mb-2">
+                  <div className="text-3xl font-bold text-yellow-400 mb-2">
                     {history.filter(r => r.risk_level === 'MODERATE').length}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 font-medium">Moderate Risk</div>
+                  <div className="text-sm text-gray-300 font-medium">Moderate Risk</div>
                 </div>
                 <div className="feature-card gradient-card rounded-3xl p-8 transform -rotate-2">
-                  <div className="text-3xl font-bold text-red-600 mb-2">
+                  <div className="text-3xl font-bold text-red-400 mb-2">
                     {history.filter(r => r.risk_level === 'HIGH').length}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 font-medium">High Risk</div>
+                  <div className="text-sm text-gray-300 font-medium">High Risk</div>
                 </div>
               </div>
 
               {/* Reports List with personality */}
               <div className="feature-card gradient-card rounded-3xl">
-                <div className="px-8 py-6 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recent Reports</h2>
+                <div className="px-8 py-6 border-b border-gray-700">
+                  <h2 className="text-2xl font-bold text-white">Recent Reports</h2>
                 </div>
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-gray-700">
                   {history.map((report) => (
-                    <div key={report.id} className="p-6 hover:bg-gray-50">
+                    <div key={report.id} className="p-6 hover:bg-gray-800/30">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-3">
-                            <h3 className="text-lg font-medium text-gray-900">
+                            <h3 className="text-lg font-medium text-white">
                               {report.original_filename}
                             </h3>
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskLevelColor(report.risk_level)}`}>
                               {report.risk_level || 'UNKNOWN'}
                             </span>
                           </div>
-                          <div className="mt-2 text-sm text-gray-600">
+                          <div className="mt-2 text-sm text-gray-300">
                             <span className="font-medium">Date:</span> {formatDate(report.created_at)}
                             {report.lab_name && (
                               <>
@@ -158,9 +181,9 @@ export default function HistoryPage() {
                             )}
                           </div>
                           {report.summary && (
-                            <p className="mt-2 text-sm text-gray-700">{report.summary}</p>
+                            <p className="mt-2 text-sm text-gray-300">{report.summary}</p>
                           )}
-                          <div className="mt-2 flex space-x-4 text-sm text-gray-500">
+                          <div className="mt-2 flex space-x-4 text-sm text-gray-400">
                             <span>Abnormal: {report.abnormal_count || 0}</span>
                             <span>Critical: {report.critical_count || 0}</span>
                           </div>
@@ -168,15 +191,21 @@ export default function HistoryPage() {
                         <div className="flex space-x-2">
                           <button
                             onClick={() => setSelectedReport(report.id)}
-                            className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            className="px-3 py-1 text-sm text-blue-400 hover:text-blue-300 font-medium"
                           >
                             View Details
                           </button>
                           <button
                             onClick={() => window.open(`/reports/${report.id}`, '_blank')}
-                            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                            className="px-3 py-1 text-sm text-gray-400 hover:text-gray-300"
                           >
                             Compare
+                          </button>
+                          <button
+                            onClick={() => handleDeleteReport(report.id)}
+                            className="px-3 py-1 text-sm text-red-400 hover:text-red-300 font-medium"
+                          >
+                            Delete
                           </button>
                         </div>
                       </div>

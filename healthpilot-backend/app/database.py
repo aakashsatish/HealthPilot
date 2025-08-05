@@ -126,15 +126,28 @@ class DatabaseService:
     def save_analysis_result(self, report_id: str, ocr_result: dict, analysis_result: dict = None):
         """Save analysis results"""
         try:
-            data = {
+            # Save analysis to analyses table
+            analysis_data = {
                 "report_id": report_id,
                 "ocr_text": ocr_result.get("text", ""),
                 "ocr_confidence": ocr_result.get("average_confidence", 0),
                 "analysis_result": analysis_result or {},
                 "status": "completed"
             }
-            response = self.supabase.table("analyses").insert(data).execute()
-            return response.data[0] if response.data else None
+            analysis_response = self.supabase.table("analyses").insert(analysis_data).execute()
+            
+            # Update report status to completed
+            report_update_data = {
+                "status": "completed",
+                "summary": analysis_result.get("summary", "") if analysis_result else "",
+                "risk_level": analysis_result.get("risk_assessment", {}).get("risk_level", "") if analysis_result else "",
+                "abnormal_count": analysis_result.get("abnormal_count", 0) if analysis_result else 0,
+                "critical_count": analysis_result.get("critical_count", 0) if analysis_result else 0
+            }
+            report_response = self.supabase.table("reports").update(report_update_data).eq("id", report_id).execute()
+            
+            logger.info(f"Analysis saved and report updated: {report_id}")
+            return analysis_response.data[0] if analysis_response.data else None
         except Exception as e:
             logger.error(f"Error saving analysis: {e}")
             return None

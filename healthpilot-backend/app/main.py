@@ -298,6 +298,24 @@ async def get_report_details(report_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.delete("/reports/{report_id}")
+async def delete_report(report_id: str):
+    """Delete a specific report and its associated analysis"""
+    try:
+        # Delete the analysis first (due to foreign key constraints)
+        db_service.supabase.table("analyses").delete().eq("report_id", report_id).execute()
+        
+        # Delete the report
+        result = db_service.supabase.table("reports").delete().eq("id", report_id).execute()
+        
+        if result.data:
+            return {"success": True, "message": "Report deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Report not found")
+    except Exception as e:
+        logger.error(f"Error deleting report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/reports/compare")
 async def compare_reports(report_id_1: str, report_id_2: str):
     """Compare two reports"""
