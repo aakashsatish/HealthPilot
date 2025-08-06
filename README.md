@@ -66,6 +66,7 @@ HealthPilot addresses these issues by providing:
 - Python 3.11+
 - Ollama (for local AI)
 - Redis (for background jobs)
+- ngrok (for hybrid deployment)
 
 ### **1. Clone the Repository**
 ```bash
@@ -118,19 +119,47 @@ redis-server
 ```bash
 cd healthpilot-backend
 source venv/bin/activate
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+python -m app.main
 ```
 
-**Terminal 4: Start Frontend**
+**Terminal 4: Start ngrok (for hybrid deployment)**
+```bash
+ngrok http 8000
+```
+
+**Terminal 5: Start Frontend (local development)**
 ```bash
 cd healthpilot-frontend
 npm run dev
 ```
 
 ### **5. Access the Application**
+
+#### **Local Development**
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
+
+#### **Hybrid Deployment (Current)**
+- **Frontend**: https://healthpilot-frontend-d89nr9jv3-aakashs-projects-9460ac97.vercel.app
+- **Backend**: Running locally with ngrok tunnel
+- **Status**: ✅ Deployed, ⚠️ File upload needs debugging
+
+## 🚀 **Quick Start**
+
+### **Using the Start Script**
+For easy setup, use the provided start script:
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+This script will:
+- Check prerequisites (Node.js, Python, Ollama, Redis)
+- Set up virtual environment
+- Install dependencies
+- Start Ollama and Redis
+- Provide instructions for starting backend and frontend
 
 ## 📁 **Project Structure**
 
@@ -158,6 +187,7 @@ HealthPilot/
 │   ├── requirements/
 │   │   └── requirements.txt      # Python dependencies
 │   └── uploads/                  # File storage
+├── start.sh                      # Quick start script
 ├── README.md                     # This file
 ├── .gitignore                    # Git ignore rules
 └── deploy.sh                     # Deployment script
@@ -196,6 +226,26 @@ HealthPilot/
 - Asynchronous file processing
 - Job status tracking
 - Error handling and retries
+
+## 🚀 **Deployment**
+
+### **Current Deployment**
+The application is currently deployed using a hybrid approach:
+- **Frontend**: Hosted on Vercel (free tier)
+- **Backend**: Running locally with ngrok tunnel
+- **Database**: Supabase (free tier)
+- **AI**: Ollama (local, free)
+
+### **Deployment URLs**
+- **Production Frontend**: https://healthpilot-frontend-d89nr9jv3-aakashs-projects-9460ac97.vercel.app
+- **Backend Tunnel**: https://dac0ce69ae25.ngrok-free.app
+
+### **Known Issues**
+- ⚠️ **File Upload**: CORS and endpoint issues need debugging
+- ✅ **Authentication**: Working with Supabase
+- ✅ **Dashboard**: Loading and displaying data
+- ✅ **Email**: Modal-based email functionality
+- ✅ **Download**: PDF report generation
 
 ## 🧪 **Testing**
 
