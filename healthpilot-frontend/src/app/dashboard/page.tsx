@@ -3,7 +3,7 @@
 import { useUser } from '@/contexts/UserContext'
 import AuthGuard from '@/components/auth/AuthGuard'
 import EmailModal from '@/components/ui/EmailModal'
-import { apiJson, apiCall, apiBlob } from '@/lib/api'
+import { apiJson, apiCall, apiBlob } from '../../lib/api'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
