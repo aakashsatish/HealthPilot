@@ -1,4 +1,0 @@
-Glucose: 120 mg/dL
-Hemoglobin: 14.2 g/dL
-HDL: 45 mg/dL
-LDL: 110 mg/dL

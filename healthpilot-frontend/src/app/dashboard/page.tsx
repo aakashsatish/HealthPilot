@@ -3,6 +3,7 @@
 import { useUser } from '@/contexts/UserContext'
 import AuthGuard from '@/components/auth/AuthGuard'
 import EmailModal from '@/components/ui/EmailModal'
+import { apiJson, apiCall, apiBlob } from '@/lib/api'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
@@ -33,8 +34,7 @@ export default function Dashboard() {
 
   const fetchDashboardStats = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/reports/history/${user?.id}`)
-      const data = await response.json()
+      const data = await apiJson(`/reports/history/${user?.id}`)
       
       if (data.success && data.history) {
         setStats({
@@ -57,7 +57,7 @@ export default function Dashboard() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/reports/${reportId}`, {
+      const response = await apiCall(`/reports/${reportId}`, {
         method: 'DELETE',
       })
 
@@ -81,7 +81,7 @@ export default function Dashboard() {
 
   const handleSendEmail = async (email: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/reports/${selectedReportId}/email`, {
+      const response = await apiCall(`/reports/${selectedReportId}/email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ export default function Dashboard() {
 
   const handleDownloadReport = async (reportId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/reports/${reportId}/download`)
+      const response = await apiCall(`/reports/${reportId}/download`)
       
       if (response.ok) {
         // Get the filename from the response headers

@@ -1,174 +1,122 @@
-import requests
-import json
-from typing import List, Dict, Any
-import logging
-
-logger = logging.getLogger(__name__)
+import os
+import openai
+from typing import Dict, Any, Optional
 
 class AIAnalysisService:
-    def __init__(self, ollama_url: str = "http://localhost:11434"):
-        self.ollama_url = ollama_url
-    
-    def generate_full_analysis(self, lab_results: List[Dict], age: int = None, sex: str = None, 
-                            weight: float = None, height: float = None, 
-                            weight_unit: str = None, height_unit: str = None,
-                            medical_conditions: List[str] = None, medications: List[str] = None,
-                            lifestyle_factors: List[str] = None) -> Dict[str, Any]:
-        """Generate complete AI-powered analysis"""
+    def __init__(self):
+        self.use_openai = os.getenv("USE_OPENAI", "false").lower() == "true"
+        
+        if self.use_openai:
+            # Initialize OpenAI client
+            openai.api_key = os.getenv("OPENAI_API_KEY")
+            if not openai.api_key:
+                raise ValueError("OPENAI_API_KEY environment variable is required when USE_OPENAI=true")
+        else:
+            # Initialize Ollama client (for local development)
+            try:
+                import ollama
+                self.ollama_client = ollama
+            except ImportError:
+                raise ImportError("Ollama package not installed. Install with: pip install ollama")
+
+    def analyze_lab_results(self, text: str) -> Dict[str, Any]:
+        """
+        Analyze lab report text and return structured results
+        """
+        prompt = f"""
+        Analyze this lab report and provide a JSON response with the following structure:
+        {{
+            "risk_level": "LOW|MODERATE|HIGH|UNKNOWN",
+            "summary": "A clear, concise summary of the findings",
+            "abnormal_count": number,
+            "critical_count": number,
+            "recommendations": "Any recommendations for follow-up"
+        }}
+
+        Lab Report Text:
+        {text}
+        """
+
+        if self.use_openai:
+            return self._analyze_with_openai(prompt)
+        else:
+            return self._analyze_with_ollama(prompt)
+
+    def _analyze_with_openai(self, prompt: str) -> Dict[str, Any]:
+        """
+        Analyze using OpenAI API
+        """
         try:
-            # Create comprehensive prompt for full analysis
-            prompt = self._create_full_analysis_prompt(lab_results, age, sex, weight, height, 
-                                                     weight_unit, height_unit, medical_conditions, medications, lifestyle_factors)
-            
-            # Call Ollama API
-            response = requests.post(
-                f"{self.ollama_url}/api/generate",
-                json={
-                    "model": "llama3.1:8b",
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.7,
-                        "top_p": 0.9
-                    }
-                },
-                timeout=60
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a medical lab report analyzer. Provide accurate, helpful analysis in JSON format."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.1,
+                max_tokens=1000
             )
             
-            if response.status_code == 200:
-                result = response.json()
-                analysis = self._parse_full_analysis_response(result['response'], lab_results)
-                return analysis
-            else:
-                logger.error(f"Ollama API error: {response.status_code}")
-                return self._get_fallback_analysis(lab_results)
-                
+            # Parse the response
+            content = response.choices[0].message.content
+            return self._parse_ai_response(content)
+            
         except Exception as e:
-            logger.error(f"AI analysis error: {e}")
-            return self._get_fallback_analysis(lab_results)
-    
-    def _create_full_analysis_prompt(self, lab_results: List[Dict], age: int = None, sex: str = None,
-                                   weight: float = None, height: float = None,
-                                   weight_unit: str = None, height_unit: str = None,
-                                   medical_conditions: List[str] = None, medications: List[str] = None,
-                                   lifestyle_factors: List[str] = None) -> str:
-        """Create a comprehensive prompt for full analysis"""
-        
-        # Format lab results for the prompt
-        results_text = ""
-        abnormal_count = 0
-        for result in lab_results:
-            status = "NORMAL" if result["classification"] == "NORMAL" else f"{result['classification']}"
-            if result["classification"] != "NORMAL":
-                abnormal_count += 1
-            results_text += f"- {result['original_name']}: {result['value']} {result['unit']} ({status})\n"
-        
-        # Build personalization info
-        personalization = []
-        if age:
-            personalization.append(f"Age: {age}")
-        if sex:
-            personalization.append(f"Sex: {sex}")
-        if weight:
-            unit = weight_unit or 'kg'
-            personalization.append(f"Weight: {weight} {unit}")
-        if height:
-            unit = height_unit or 'cm'
-            if unit == 'ft':
-                # Convert decimal feet to feet and inches
-                feet = int(height)
-                inches = round((height - feet) * 12)
-                personalization.append(f"Height: {feet} ft {inches} in")
-            else:
-                personalization.append(f"Height: {height} {unit}")
-        if medical_conditions:
-            personalization.append(f"Medical Conditions: {', '.join(medical_conditions)}")
-        if medications:
-            personalization.append(f"Medications: {', '.join(medications)}")
-        if lifestyle_factors:
-            personalization.append(f"Lifestyle: {', '.join(lifestyle_factors)}")
-        
-        personalization_text = "\n".join(personalization) if personalization else "No additional information provided"
-        
-        prompt = f"""You are a medical AI assistant. Analyze these lab results and provide a comprehensive health assessment in JSON format.
+            print(f"OpenAI API error: {e}")
+            return self._get_fallback_response()
 
-Lab Results:
-{results_text}
-
-Patient Information:
-{personalization_text}
-
-Abnormal Results: {abnormal_count} out of {len(lab_results)} tests
-
-Provide a JSON response with the following structure:
-{{
-  "summary": "Plain English summary of the results in 2-3 sentences",
-  "risk_level": "LOW/MODERATE/HIGH",
-  "risk_factors": ["factor1", "factor2"],
-  "early_warnings": [
-    {{
-      "type": "CARDIOVASCULAR/METABOLIC/JOINT/etc",
-      "severity": "LOW/MODERATE/HIGH",
-      "message": "Brief warning message",
-      "action": "Recommended action"
-    }}
-  ],
-  "recommendations": [
-    "Recommendation 1 (under 15 words)",
-    "Recommendation 2 (under 15 words)",
-    "Recommendation 3 (under 15 words)"
-  ]
-}}
-
-Focus on:
-- Cardiovascular risk (cholesterol, triglycerides)
-- Metabolic health (urate, glucose)
-- Lifestyle recommendations
-- Medical follow-up needs
-- Age and sex considerations
-- Weight and height considerations
-- Medical conditions and medications
-- Lifestyle factors
-
-Provide only valid JSON, no additional text."""
-
-        return prompt
-    
-    def _parse_full_analysis_response(self, response: str, lab_results: List[Dict]) -> Dict[str, Any]:
-        """Parse the AI response into structured analysis"""
+    def _analyze_with_ollama(self, prompt: str) -> Dict[str, Any]:
+        """
+        Analyze using local Ollama
+        """
         try:
-            # Extract JSON from response
-            json_start = response.find('{')
-            json_end = response.rfind('}') + 1
-            if json_start != -1 and json_end != 0:
-                json_str = response[json_start:json_end]
-                analysis = json.loads(json_str)
+            response = self.ollama_client.chat(
+                model="llama3.1",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            content = response['message']['content']
+            return self._parse_ai_response(content)
+            
+        except Exception as e:
+            print(f"Ollama error: {e}")
+            return self._get_fallback_response()
+
+    def _parse_ai_response(self, content: str) -> Dict[str, Any]:
+        """
+        Parse AI response and extract structured data
+        """
+        try:
+            import json
+            # Try to extract JSON from the response
+            if "{" in content and "}" in content:
+                start = content.find("{")
+                end = content.rfind("}") + 1
+                json_str = content[start:end]
+                result = json.loads(json_str)
                 
-                # Ensure all required fields exist
-                analysis.setdefault("summary", "Analysis completed")
-                analysis.setdefault("risk_level", "LOW")
-                analysis.setdefault("risk_factors", [])
-                analysis.setdefault("early_warnings", [])
-                analysis.setdefault("recommendations", [])
+                # Validate required fields
+                required_fields = ["risk_level", "summary", "abnormal_count", "critical_count"]
+                for field in required_fields:
+                    if field not in result:
+                        result[field] = "UNKNOWN" if field == "risk_level" else 0
                 
-                return analysis
+                return result
             else:
-                raise ValueError("No JSON found in response")
+                return self._get_fallback_response()
                 
         except Exception as e:
-            logger.error(f"Failed to parse AI response: {e}")
-            return self._get_fallback_analysis(lab_results)
-    
-    def _get_fallback_analysis(self, lab_results: List[Dict]) -> Dict[str, Any]:
-        """Fallback analysis if AI fails"""
+            print(f"Error parsing AI response: {e}")
+            return self._get_fallback_response()
+
+    def _get_fallback_response(self) -> Dict[str, Any]:
+        """
+        Return fallback response when AI analysis fails
+        """
         return {
-            "summary": "Lab results analyzed. Discuss with your healthcare provider.",
-            "risk_level": "MODERATE",
-            "risk_factors": ["Multiple abnormal results"],
-            "early_warnings": [],
-            "recommendations": [
-                "Discuss these results with your healthcare provider.",
-                "Consider lifestyle modifications based on your results.",
-                "Schedule follow-up testing as recommended by your doctor."
-            ]
+            "risk_level": "UNKNOWN",
+            "summary": "Unable to analyze report at this time. Please try again later.",
+            "abnormal_count": 0,
+            "critical_count": 0,
+            "recommendations": "Please consult with a healthcare provider for proper interpretation."
         }
