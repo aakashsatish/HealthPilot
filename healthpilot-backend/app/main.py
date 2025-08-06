@@ -34,6 +34,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 upload_service = UploadService()
 history_service = HistoryService()
+db_service = DatabaseService()
 
 app = FastAPI(
     title="HealthPilot API",
@@ -48,6 +49,7 @@ app.add_middleware(
         "http://localhost:3000", 
         "http://localhost:3001",
         "http://67.71.150.202:8000",  # Your public IP
+        "https://healthpilot-frontend-rqa4oo4f1-aakashs-projects-9460ac97.vercel.app",  # Your specific Vercel domain
         "https://*.vercel.app",  # Allow all Vercel domains
         "https://*.vercel.com",  # Allow Vercel custom domains
     ],
