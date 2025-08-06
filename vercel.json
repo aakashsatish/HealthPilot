@@ -1,6 +1,10 @@
 {
-  "buildCommand": "cd healthpilot-frontend && npm run build",
+  "buildCommand": "cd healthpilot-frontend && npm install && npm run build",
   "outputDirectory": "healthpilot-frontend/.next",
-  "installCommand": "cd healthpilot-frontend && npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "functions": {
+    "healthpilot-frontend/src/**/*.ts": {
+      "runtime": "nodejs18.x"
+    }
+  }
 } 

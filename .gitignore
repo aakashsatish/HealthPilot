@@ -232,3 +232,4 @@ uploads/
 
 # Local development
 .local/ 
+.vercel
