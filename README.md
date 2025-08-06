@@ -2,22 +2,23 @@
 
 ## 📋 **Project Overview**
 
-HealthPilot is a comprehensive lab report analysis platform that uses AI to translate complex medical information into understandable insights. Built as a full-stack application, it helps users understand their lab results through intelligent analysis and clear explanations.
+HealthPilot is a personal project born from my own frustration with medical lab reports. Like many people, I found myself staring at pages of complex medical terminology, unclear reference ranges, and results that left me wondering: "Should I be worried? What does this actually mean for my health?"
 
-## 🎯 **Problem Solved**
+This project is my solution to that problem. I built HealthPilot to translate those confusing lab reports into clear, understandable insights that actually help people make informed decisions about their health.
 
-Many people struggle to understand their lab reports due to:
-- **Complex medical terminology**
-- **Unclear reference ranges**
-- **Lack of context for results**
-- **Difficulty identifying important findings**
+## 🎯 **The Problem I'm Solving**
 
-HealthPilot addresses these issues by providing:
-- **AI-powered analysis** of lab results
-- **Clear, plain-English explanations**
-- **Risk level assessment**
-- **Personalized recommendations**
-- **Professional PDF reports**
+I created this because I, like many others, have struggled with:
+- **Complex medical jargon** that makes lab reports feel like reading a foreign language
+- **Unclear reference ranges** that don't explain what "normal" actually means for me
+- **Lack of context** - results without explanations of what they indicate about my health
+- **Anxiety and uncertainty** about whether I should be concerned or not
+
+HealthPilot transforms this confusion into clarity by providing:
+- **Plain-English explanations** of what each result actually means
+- **Personalized risk assessments** (LOW/MODERATE/HIGH) so you know what to focus on
+- **Actionable recommendations** based on your specific results
+- **Professional PDF reports** you can share with healthcare providers
 
 ## 🏗️ **Architecture**
 
@@ -264,7 +265,9 @@ npm test
 
 ## 🎓 **About the Developer**
 
-This project was developed by a second-year McMaster Software Engineering student as a comprehensive learning experience in modern web development. The goal was to create a practical application that solves real-world problems while demonstrating proficiency in current technologies and best practices.
+I'm a second-year McMaster Software Engineering student who built this project because I genuinely needed it. After getting my own lab results and feeling completely lost trying to understand them, I decided to create something that would help not just me, but anyone who's ever felt overwhelmed by medical jargon.
+
+This project represents my journey into full-stack development, AI integration, and building solutions for real problems that affect real people. It's not just a portfolio piece - it's something I actually use and want to share with others who face the same challenges I did.
 
 ## 📄 **License**
 
@@ -284,4 +287,4 @@ For questions or support, please open an issue on GitHub or contact the develope
 
 ---
 
-**Built with ❤️ by a McMaster Software Engineering student**
+**Built with ❤️ by someone who knows what it's like to be confused by lab reports**
