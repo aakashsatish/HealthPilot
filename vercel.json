@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd healthpilot-frontend && npm run build",
+  "outputDirectory": "healthpilot-frontend/.next",
+  "installCommand": "cd healthpilot-frontend && npm install",
+  "framework": "nextjs"
+} 

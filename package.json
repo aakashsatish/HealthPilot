@@ -1,0 +1,11 @@
+{
+  "name": "healthpilot",
+  "version": "1.0.0",
+  "description": "AI-powered lab report analysis platform",
+  "scripts": {
+    "vercel-build": "cd healthpilot-frontend && npm install && npm run build"
+  },
+  "workspaces": [
+    "healthpilot-frontend"
+  ]
+} 
