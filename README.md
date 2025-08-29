@@ -25,7 +25,7 @@ HealthPilot transforms this confusion into clarity by providing:
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │    Backend      │    │   AI Services   │
-│   (Next.js)     │◄──►│   (FastAPI)     │◄──►│   (Ollama)      │
+│ (Next.js/React) |◄──►│   (FastAPI)     │◄──►│   (Ollama)      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          │                       │                       │
