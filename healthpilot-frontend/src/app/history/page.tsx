@@ -5,6 +5,7 @@ import { useUser } from '@/contexts/UserContext'
 import AuthGuard from '@/components/auth/AuthGuard'
 import EmailModal from '@/components/ui/EmailModal'
 import { ReportHistory } from '@/types/upload'
+import { config } from '@/lib/config'
 
 export default function HistoryPage() {
   const { user } = useUser()
@@ -23,7 +24,7 @@ export default function HistoryPage() {
   const fetchHistory = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`http://localhost:8000/reports/history/${user?.id}`)
+      const response = await fetch(`${config.apiUrl}/reports/history/${user?.id}`)
       const data = await response.json()
       
       if (data.success) {
@@ -59,7 +60,7 @@ export default function HistoryPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/reports/${reportId}`, {
+      const response = await fetch(`${config.apiUrl}/reports/${reportId}`, {
         method: 'DELETE',
       })
 
@@ -83,7 +84,7 @@ export default function HistoryPage() {
 
   const handleSendEmail = async (email: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/reports/${selectedReportId}/email`, {
+      const response = await fetch(`${config.apiUrl}/reports/${selectedReportId}/email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +106,7 @@ export default function HistoryPage() {
 
   const handleDownloadReport = async (reportId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/reports/${reportId}/download`)
+      const response = await fetch(`${config.apiUrl}/reports/${reportId}/download`)
       
       if (response.ok) {
         // Get the filename from the response headers

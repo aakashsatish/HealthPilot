@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import AuthGuard from '@/components/auth/AuthGuard'
 import Link from 'next/link'
+import { config } from '@/lib/config'
 
 // Custom CSS for range slider
 const rangeSliderStyles = `
@@ -101,7 +102,7 @@ export default function ProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`http://localhost:8000/auth/profile/${user?.id}`)
+      const response = await fetch(`${config.apiUrl}/auth/profile/${user?.id}`)
       const data = await response.json()
       
       if (data.success && data.profile) {
@@ -120,7 +121,7 @@ export default function ProfilePage() {
     setMessage('')
 
     try {
-      const response = await fetch('http://localhost:8000/auth/profile', {
+      const response = await fetch(`${config.apiUrl}/auth/profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

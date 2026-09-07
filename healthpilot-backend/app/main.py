@@ -46,13 +46,13 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000", 
+        "http://localhost:3000",
         "http://localhost:3001",
-        "http://67.71.150.202:8000",  # Your public IP
-        "https://healthpilot-frontend-rqa4oo4f1-aakashs-projects-9460ac97.vercel.app",  # Your specific Vercel domain
-        "https://*.vercel.app",  # Allow all Vercel domains
-        "https://*.vercel.com",  # Allow Vercel custom domains
     ],
+    # CORSMiddleware matches allow_origins exactly, so wildcards like
+    # "https://*.vercel.app" never match. Vercel mints a new hostname per
+    # deployment, so match the whole domain with a regex instead.
+    allow_origin_regex=r"https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

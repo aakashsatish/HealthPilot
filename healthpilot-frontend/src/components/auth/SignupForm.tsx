@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signUp } from '@/lib/auth'
+import { config } from '@/lib/config'
 export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -44,7 +45,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
 
     // Step 2: Create profile in backend
-    const response = await fetch('http://localhost:8000/auth/profile', {
+    const response = await fetch(`${config.apiUrl}/auth/profile`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import AuthGuard from '@/components/auth/AuthGuard'
 import EmailModal from '@/components/ui/EmailModal'
 import { ReportDetails } from '@/types/upload'
+import { config } from '@/lib/config'
 
 export default function ReportDetailPage() {
   const params = useParams()
@@ -20,7 +21,7 @@ export default function ReportDetailPage() {
   const fetchReportDetails = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`http://localhost:8000/reports/${reportId}`)
+      const response = await fetch(`${config.apiUrl}/reports/${reportId}`)
       const data = await response.json()
       
       if (data.success) {
@@ -39,7 +40,7 @@ export default function ReportDetailPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/reports/${reportId}`, {
+      const response = await fetch(`${config.apiUrl}/reports/${reportId}`, {
         method: 'DELETE',
       })
 
@@ -62,7 +63,7 @@ export default function ReportDetailPage() {
 
   const handleSendEmail = async (email: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/reports/${reportId}/email`, {
+      const response = await fetch(`${config.apiUrl}/reports/${reportId}/email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +85,7 @@ export default function ReportDetailPage() {
 
   const handleDownloadReport = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/reports/${reportId}/download`)
+      const response = await fetch(`${config.apiUrl}/reports/${reportId}/download`)
       
       if (response.ok) {
         // Get the filename from the response headers
