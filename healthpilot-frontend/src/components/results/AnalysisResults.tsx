@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AnalysisResult } from '@/types/upload'
+import { config } from '@/lib/config'
 
 interface AnalysisResultsProps {
   result: {
@@ -25,7 +26,7 @@ export default function AnalysisResults({ result, isProcessing, onAnalysisComple
 
   const checkJobStatus = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/jobs/${result.job?.job_id}`)
+      const response = await fetch(`${config.apiUrl}/jobs/${result.job?.job_id}`)
       const jobData = await response.json()
       
       setJobStatus(jobData.status)

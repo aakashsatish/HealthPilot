@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { UploadResult } from '@/types/upload'
 import { useUser } from '@/contexts/UserContext'
+import { config } from '@/lib/config'
 
 interface FileUploadProps {
   onUploadSuccess: (result: UploadResult) => void
@@ -33,7 +34,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
 
       console.log('DEBUG: User ID being sent:', user?.id || 'anonymous')
       console.log('DEBUG: Sending request to backend...')
-      const response = await fetch('http://localhost:8000/upload/file', {
+      const response = await fetch(`${config.apiUrl}/upload/file`, {
         method: 'POST',
         body: formData,
       })
