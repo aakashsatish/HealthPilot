@@ -6,62 +6,6 @@ import AuthGuard from '@/components/auth/AuthGuard'
 import Link from 'next/link'
 import { config } from '@/lib/config'
 
-// Custom CSS for range slider
-const rangeSliderStyles = `
-  .slider::-webkit-slider-thumb {
-    appearance: none;
-    height: 24px;
-    width: 24px;
-    border-radius: 50%;
-    background: #3b82f6;
-    cursor: pointer;
-    border: 3px solid #ffffff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  }
-  
-  .slider::-moz-range-thumb {
-    height: 24px;
-    width: 24px;
-    border-radius: 50%;
-    background: #3b82f6;
-    cursor: pointer;
-    border: 3px solid #ffffff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  }
-  
-  .slider::-webkit-slider-track {
-    background: #d1d5db;
-    height: 10px;
-    border-radius: 5px;
-  }
-  
-  .slider::-moz-range-track {
-    background: #d1d5db;
-    height: 10px;
-    border-radius: 5px;
-  }
-  
-  /* Dark mode support */
-  .dark .slider::-webkit-slider-track {
-    background: #4b5563;
-  }
-  
-  .dark .slider::-moz-range-track {
-    background: #4b5563;
-  }
-  
-  /* Remove number input spinners */
-  input[type="number"]::-webkit-outer-spin-button,
-  input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  
-  input[type="number"] {
-    -moz-appearance: textfield;
-  }
-`
-
 interface ProfileData {
   age?: number
   sex?: string
@@ -185,7 +129,6 @@ export default function ProfilePage() {
         <div className="organic-shape"></div>
         
 
-        <style jsx>{rangeSliderStyles}</style>
         <div className="max-w-5xl mx-auto py-12 px-4">
           {/* Header with personality */}
                       <div className="hero-text flex justify-between items-center mb-12">

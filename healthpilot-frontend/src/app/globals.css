@@ -273,3 +273,57 @@ body {
 .asymmetric-grid > *:nth-child(3) {
   margin-top: -1rem;
 }
+
+/* Range slider + number input styling (used on /profile) */
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    height: 24px;
+    width: 24px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  
+  .slider::-moz-range-thumb {
+    height: 24px;
+    width: 24px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  
+  .slider::-webkit-slider-track {
+    background: #d1d5db;
+    height: 10px;
+    border-radius: 5px;
+  }
+  
+  .slider::-moz-range-track {
+    background: #d1d5db;
+    height: 10px;
+    border-radius: 5px;
+  }
+  
+  /* Dark mode support */
+  .dark .slider::-webkit-slider-track {
+    background: #4b5563;
+  }
+  
+  .dark .slider::-moz-range-track {
+    background: #4b5563;
+  }
+  
+  /* Remove number input spinners */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
